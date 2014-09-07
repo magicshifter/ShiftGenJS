@@ -5,7 +5,7 @@
 		<title>Magicshifter JS Sim</title>
 		<style>
 			body {
-			background: #333;
+			background: #000;
 			}
 		</style>
 		<script type="text/javascript" src="libs/snap.svg-min.js"></script>
@@ -16,21 +16,39 @@
     </head>
 	<body>
 
-    <textarea id="svgSource" style="position: fixed; bottom: 0px; left: 0px; "></textarea>
+    <div style="position: fixed; top: 0px; left: 0px;">
+        <input type="file" id="filePicture" accept="image/*">
+        <canvas id="canvasActiveBitmap" height="16"></canvas>
+    </div>
+    <div style="position: fixed; bottom: 0px; left: 0px;">
+        <textarea id="svgSource"></textarea>
+    </div>
 
     <script>
-/*
-            var paper = Raphael("canvas", 640, 480);
+        window.addEventListener("load", function() {
+            document.getElementById("filePicture").addEventListener("change", function(event) {
+                var img = new Image;
+                img.onload = function() {
+                    var canvas = document.getElementById('canvasActiveBitmap');
 
-            // Creates circle at x = 50, y = 40, with radius 10
-            var circle = paper.circle(50, 40, 10);
-            // Sets the fill attribute of the circle to red (#f00)
-            circle.attr("fill", "#f00");
+                    var w = img.width;
+                    var h = img.height;
+                    canvas.width = w;
+                    canvas.height = h;
 
-            // Sets the stroke attribute of the circle to white
-            circle.attr("stroke", "#fff");
-            return;
-*/
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    imgData = ctx.getImageData(0,0,w,h);
+                    simState.steps = w;
+                    refreshGui();
+                    DoSim();
+                };
+                img.src = URL.createObjectURL(event.target.files[0]);
+            });
+
+
+            var imgData;
             var width = window.innerWidth;
             var height = window.innerHeight;
             var s = Snap(width, height);
@@ -38,6 +56,7 @@
             var simState = {
                 steps: 50,
                 startStep: 0,
+                ledRadius: 2,
 
                 axisX: 0.1,
                 axisY: 0.9,
@@ -52,11 +71,18 @@
                 shifterDirZ: 0,
 
                 transX: 0.01,
-                transY: 0.01,
+                transY: -4.01,
                 transZ: 0.01,
 
                 rotSpeed: 0.035,
-                save: function() {
+
+                preview: false,
+                save: function () {
+                    if (simState.preview) {
+                        simState.preview = false;
+                        refreshGui();
+                        DoSim();
+                    }
                     var svgText = s.outerSVG();
                     var svgBlob = new Blob([svgText], {type: "image/svg+xml"});
                     saveAs(svgBlob, "export.svg");
@@ -66,8 +92,14 @@
 
             var gui = new dat.GUI();
 
+            function refreshGui() {
+                for (var i in gui.__controllers) {
+                    gui.__controllers[i].updateDisplay();
+                }
+            }
+
             function SetupOnChange(controller) {
-                controller.onChange(function(value) {
+                controller.onChange(function (value) {
                     // Fires on every change, drag, keypress, etc.
                     DoSim();
                 });
@@ -78,8 +110,13 @@
 //                });
             }
 
+
             SetupOnChange(gui.add(simState, 'steps', 1, 350));
             SetupOnChange(gui.add(simState, 'startStep', 0, 249));
+
+            SetupOnChange(gui.add(simState, 'ledRadius', 1, 10));
+
+            SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.1));
 
             SetupOnChange(gui.add(simState, 'axisX', -1, 1));
             SetupOnChange(gui.add(simState, 'axisY', -1, 1));
@@ -97,21 +134,19 @@
             SetupOnChange(gui.add(simState, 'transY', -10, 10));
             SetupOnChange(gui.add(simState, 'transZ', -10, 10));
 
-            SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.05));
+            SetupOnChange(gui.add(simState, 'preview'));
             gui.add(simState, 'save');
-
-
 
             // initial run
             DoSim();
 
-//saving
-//$("#code-block").text(s.outerSVG());
-
             function DoSim() {
                 s.clear();
 
-                var LEDS = 16;
+                var LEDS = simState.preview ? 3 : 16;
+                var ledDist = 15.0 / (LEDS-1);
+
+
                 var ledPositions = [];
                 var tempPositions = [];
 
@@ -120,7 +155,7 @@
 
                 for (var i = 0; i < LEDS; i++) {
                     var newPos = dir.clone();
-                    newPos.multiplyScalar(i);
+                    newPos.multiplyScalar(i * ledDist);
                     newPos.add(pos);
 
                     ledPositions[i] = newPos;
@@ -141,14 +176,31 @@
 
                         // show it if start is invalid or if its in range
                         if (simState.startStep >= simState.steps ||
-                            step >= simState.startStep) {
+                                step >= simState.startStep) {
+
                             var color = new HSVColour((360 * Math.sin(step / 40)) % 360, 100, 100);
-                            var ledCirc = s.circle(v.x + width/2, v.y + height/2, 2);
-                            ledCirc.attr({
-                                fill: color.getCSSHexadecimalRGB(),
-                                stroke: "#000",
-                                strokeWidth: 1
-                            });
+                            if (imgData) {
+                                var x = step - Math.floor(simState.startStep);
+                                x = x % imgData.width;
+                                var y = i;
+
+                                var raw = imgData.data;
+                                var idx = x*4 + imgData.width*4*y;
+                                if (idx >= 0 && idx < raw.length) {
+                                    color = new RGBColour(raw[idx], raw[idx + 1], raw[idx + 2], raw[idx + 3] / 255.0);
+                                }
+                            }
+
+                            var c = color.getRGB();
+
+                            //if (c.r != 0 || c.g != 0 || c.b != 0) {
+                                var ledCirc = s.circle(v.x + width / 2, v.y + height / 2, simState.ledRadius);
+                                ledCirc.attr({
+                                    fill: color.getCSSHexadecimalRGB(),
+                                    stroke: "#000",
+                                    strokeWidth: 0,
+                                });
+                            //}
                         }
 
                         vT = v.clone();
@@ -160,7 +212,7 @@
                 var svgText = s.outerSVG();
                 document.getElementById("svgSource").value = svgText;
             }
-
+        });
 
 
 		</script>
