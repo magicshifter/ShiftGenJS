@@ -12,9 +12,11 @@
         <script type="text/javascript" src="libs/dat.gui.min.js"></script>
         <script type="text/javascript" src="libs/three.js"></script>
         <script type="text/javascript" src="libs/Colour.js"></script>
+        <script type="text/javascript" src="libs/FileSaver.js"></script>
     </head>
 	<body>
-    <textarea id="svgSource"></textarea>
+
+    <textarea id="svgSource" style="position: fixed; bottom: 0px; left: 0px; "></textarea>
 
     <script>
 /*
@@ -29,6 +31,9 @@
             circle.attr("stroke", "#fff");
             return;
 */
+            var width = window.innerWidth;
+            var height = window.innerHeight;
+            var s = Snap(width, height);
 
             var simState = {
                 steps: 50,
@@ -51,6 +56,12 @@
                 transZ: 0.01,
 
                 rotSpeed: 0.035,
+                save: function() {
+                    var svgText = s.outerSVG();
+                    var svgBlob = new Blob([svgText], {type: "image/svg+xml"});
+                    saveAs(svgBlob, "export.svg");
+                    document.getElementById("svgSource").value = svgText;
+                },
             };
 
             var gui = new dat.GUI();
@@ -67,7 +78,7 @@
 //                });
             }
 
-            SetupOnChange(gui.add(simState, 'steps', 1, 250));
+            SetupOnChange(gui.add(simState, 'steps', 1, 350));
             SetupOnChange(gui.add(simState, 'startStep', 0, 249));
 
             SetupOnChange(gui.add(simState, 'axisX', -1, 1));
@@ -87,10 +98,9 @@
             SetupOnChange(gui.add(simState, 'transZ', -10, 10));
 
             SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.05));
+            gui.add(simState, 'save');
 
-SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.05));
 
-            var s = Snap(800, 600);
 
             // initial run
             DoSim();
@@ -133,7 +143,7 @@ SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.05));
                         if (simState.startStep >= simState.steps ||
                             step >= simState.startStep) {
                             var color = new HSVColour((360 * Math.sin(step / 40)) % 360, 100, 100);
-                            var ledCirc = s.circle(v.x + 400, v.y + 300, 2);
+                            var ledCirc = s.circle(v.x + width/2, v.y + height/2, 2);
                             ledCirc.attr({
                                 fill: color.getCSSHexadecimalRGB(),
                                 stroke: "#000",
@@ -147,7 +157,8 @@ SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.05));
                     }
                 }
 
-                document.getElementById("svgSource").value = s.outerSVG();
+                var svgText = s.outerSVG();
+                document.getElementById("svgSource").value = svgText;
             }
 
 
