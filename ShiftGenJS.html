@@ -31,6 +31,9 @@
 */
 
             var simState = {
+                steps: 50,
+                startStep: 0,
+
                 axisX: 0.1,
                 axisY: 0.9,
                 axisZ: 0.11,
@@ -42,6 +45,10 @@
                 shifterDirX: 0,
                 shifterDirY: 10,
                 shifterDirZ: 0,
+
+                transX: 0.01,
+                transY: 0.01,
+                transZ: 0.01,
 
                 rotSpeed: 0.035,
             };
@@ -60,6 +67,9 @@
 //                });
             }
 
+            SetupOnChange(gui.add(simState, 'steps', 1, 250));
+            SetupOnChange(gui.add(simState, 'startStep', 0, 249));
+
             SetupOnChange(gui.add(simState, 'axisX', -1, 1));
             SetupOnChange(gui.add(simState, 'axisY', -1, 1));
             SetupOnChange(gui.add(simState, 'axisZ', -1, 1));
@@ -71,6 +81,10 @@
             SetupOnChange(gui.add(simState, 'shifterDirX', -10, 10));
             SetupOnChange(gui.add(simState, 'shifterDirY', -10, 10));
             SetupOnChange(gui.add(simState, 'shifterDirZ', -10, 10));
+
+            SetupOnChange(gui.add(simState, 'transX', -10, 10));
+            SetupOnChange(gui.add(simState, 'transY', -10, 10));
+            SetupOnChange(gui.add(simState, 'transZ', -10, 10));
 
             SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.05));
 
@@ -107,18 +121,25 @@ SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.05));
                 axis.normalize();
                 var m = new THREE.Matrix4();
                 m.makeRotationAxis(axis, simState.rotSpeed);
+                var t = new THREE.Matrix4();
+                t.makeTranslation(simState.transX, simState.transY, simState.transZ);
+                m.multiply(t);
 
-                for (var step = 0; step < 48; step++) {
+                for (var step = 0; step < simState.steps; step++) {
                     for (var i = 0; i < LEDS; i++) {
                         var v = tempPositions[i];
 
-
-                        var ledCirc = s.circle(v.x+400, v.y+300, 2);
-                        ledCirc.attr({
-                            fill: "#bada55",
-                            stroke: "#000",
-                            strokeWidth: 1
-                        });
+                        // show it if start is invalid or if its in range
+                        if (simState.startStep >= simState.steps ||
+                            step >= simState.startStep) {
+                            var color = new HSVColour((360 * Math.sin(step / 40)) % 360, 100, 100);
+                            var ledCirc = s.circle(v.x + 400, v.y + 300, 2);
+                            ledCirc.attr({
+                                fill: color.getCSSHexadecimalRGB(),
+                                stroke: "#000",
+                                strokeWidth: 1
+                            });
+                        }
 
                         vT = v.clone();
                         vT.applyMatrix4(m);
