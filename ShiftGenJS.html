@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Magicshifter JS Sim</title>
+		<style>
+			body {
+			background: #333;
+			}
+		</style>
+		<script type="text/javascript" src="libs/snap.svg-min.js"></script>
+        <script type="text/javascript" src="libs/dat.gui.min.js"></script>
+        <script type="text/javascript" src="libs/three.js"></script>
+        <script type="text/javascript" src="libs/Colour.js"></script>
+    </head>
+	<body>
+    <textarea id="svgSource"></textarea>
+
+    <script>
+/*
+            var paper = Raphael("canvas", 640, 480);
+
+            // Creates circle at x = 50, y = 40, with radius 10
+            var circle = paper.circle(50, 40, 10);
+            // Sets the fill attribute of the circle to red (#f00)
+            circle.attr("fill", "#f00");
+
+            // Sets the stroke attribute of the circle to white
+            circle.attr("stroke", "#fff");
+            return;
+*/
+
+            var simState = {
+                axisX: 0.1,
+                axisY: 0.9,
+                axisZ: 0.11,
+
+                startX: -100,
+                startY: 0,
+                startZ: 200,
+
+                shifterDirX: 0,
+                shifterDirY: 10,
+                shifterDirZ: 0,
+
+                rotSpeed: 0.035,
+            };
+
+            var gui = new dat.GUI();
+
+            function SetupOnChange(controller) {
+                controller.onChange(function(value) {
+                    // Fires on every change, drag, keypress, etc.
+                    DoSim();
+                });
+
+//                controller.onFinishChange(function(value) {
+//                    // Fires when a controller loses focus.
+//                    alert("The new value is " + value);
+//                });
+            }
+
+            SetupOnChange(gui.add(simState, 'axisX', -1, 1));
+            SetupOnChange(gui.add(simState, 'axisY', -1, 1));
+            SetupOnChange(gui.add(simState, 'axisZ', -1, 1));
+
+            SetupOnChange(gui.add(simState, 'startX', -500, 500));
+            SetupOnChange(gui.add(simState, 'startY', -500, 500));
+            SetupOnChange(gui.add(simState, 'startZ', -500, 500));
+
+            SetupOnChange(gui.add(simState, 'shifterDirX', -10, 10));
+            SetupOnChange(gui.add(simState, 'shifterDirY', -10, 10));
+            SetupOnChange(gui.add(simState, 'shifterDirZ', -10, 10));
+
+            SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.05));
+
+SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.05));
+
+            var s = Snap(800, 600);
+
+            // initial run
+            DoSim();
+
+//saving
+//$("#code-block").text(s.outerSVG());
+
+            function DoSim() {
+                s.clear();
+
+                var LEDS = 16;
+                var ledPositions = [];
+                var tempPositions = [];
+
+                var pos = new THREE.Vector4(simState.startX, simState.startY, simState.startZ, 1);
+                var dir = new THREE.Vector4(simState.shifterDirX, simState.shifterDirY, simState.shifterDirZ, 0);
+
+                for (var i = 0; i < LEDS; i++) {
+                    var newPos = dir.clone();
+                    newPos.multiplyScalar(i);
+                    newPos.add(pos);
+
+                    ledPositions[i] = newPos;
+                    tempPositions[i] = ledPositions[i];
+                }
+
+                var axis = new THREE.Vector3(simState.axisX, simState.axisY, simState.axisZ);
+                axis.normalize();
+                var m = new THREE.Matrix4();
+                m.makeRotationAxis(axis, simState.rotSpeed);
+
+                for (var step = 0; step < 48; step++) {
+                    for (var i = 0; i < LEDS; i++) {
+                        var v = tempPositions[i];
+
+
+                        var ledCirc = s.circle(v.x+400, v.y+300, 2);
+                        ledCirc.attr({
+                            fill: "#bada55",
+                            stroke: "#000",
+                            strokeWidth: 1
+                        });
+
+                        vT = v.clone();
+                        vT.applyMatrix4(m);
+                        tempPositions[i] = vT;
+                    }
+                }
+
+                document.getElementById("svgSource").value = s.outerSVG();
+            }
+
+
+
+		</script>
+	</body>
+</html>
