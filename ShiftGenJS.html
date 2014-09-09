@@ -135,6 +135,7 @@
             SetupOnChange(gui.add(simState, 'transZ', -10, 10));
 
             SetupOnChange(gui.add(simState, 'preview'));
+
             gui.add(simState, 'save');
 
             // initial run
@@ -149,9 +150,13 @@
 
                 var ledPositions = [];
                 var tempPositions = [];
+                var tempNormal;
 
                 var pos = new THREE.Vector4(simState.startX, simState.startY, simState.startZ, 1);
                 var dir = new THREE.Vector4(simState.shifterDirX, simState.shifterDirY, simState.shifterDirZ, 0);
+                var norm = new THREE.Vector3(1, 0, 0);
+                norm.crossVectors(norm, dir);
+                norm.normalize();
 
                 for (var i = 0; i < LEDS; i++) {
                     var newPos = dir.clone();
@@ -194,12 +199,19 @@
                             var c = color.getRGB();
 
                             //if (c.r != 0 || c.g != 0 || c.b != 0) {
-                                var ledCirc = s.circle(v.x + width / 2, v.y + height / 2, simState.ledRadius);
+                            var zz = norm.z;
+                            var xx = v.x + width/2;
+                            var yy = v.y + height/2;
+
+                            //var angle = Math.atan2(norm.x, norm.y);
+                            var ledCirc = s.ellipse(xx, yy, simState.ledRadius, simState.ledRadius*Math.abs(zz));
+                                 var ledCirc = s.circle(xx, yy, simState.ledRadius);
                                 ledCirc.attr({
                                     fill: color.getCSSHexadecimalRGB(),
                                     stroke: "#000",
                                     strokeWidth: 0,
                                 });
+                            //   ledCirc.transform( 'r' + (180*angle) + ',' + xx + ',' + yy );
                             //}
                         }
 
@@ -207,6 +219,7 @@
                         vT.applyMatrix4(m);
                         tempPositions[i] = vT;
                     }
+                    //norm.transformDirection(m);
                 }
 
                 var svgText = s.outerSVG();
