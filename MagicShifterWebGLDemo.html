@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>three.js webgl - orbit controls</title>
+    <title>MagicShifter WebGL Demo</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <style>
@@ -48,11 +48,92 @@
 
 <script>
 
+    var simState = {
+        steps: 50,
+        startStep: 0,
+        ledRadius: 2,
+
+        axisX: 0.1,
+        axisY: 0.9,
+        axisZ: 0.11,
+
+        startX: -100,
+        startY: 0,
+        startZ: 200,
+
+        shifterDirX: 0,
+        shifterDirY: 10,
+        shifterDirZ: 0,
+
+        transX: 0,
+        transY: 0,
+        transZ: 0,
+
+        rotSpeed: 0.035,
+    };
+
+    var axis = new THREE.Vector3(simState.axisX, simState.axisY, simState.axisZ);
+    axis.normalize();
+    var m = new THREE.Matrix4();
+    m.makeRotationAxis(axis, simState.rotSpeed);
+    var t = new THREE.Matrix4();
+    t.makeTranslation(simState.transX, simState.transY, simState.transZ);
+    m.multiply(t);
+
+    var requestAnimFrame = (function(){
+        return  window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                function(callback, element){ setTimeout(callback, 1000 / 60); };
+    })();
+
+    // if ms == 0 use AbimationLoop otherwise fixed timing
+    var AnimationLoop = function(ms, callback) {
+        this.ms = ms;
+        this.callback = callback;
+        this.pauseRequested = true;
+    };
+
+    AnimationLoop.prototype.start = function() {
+        var loopContext = this;
+        this.pauseRequested = false;
+        var myFn = function() {
+            // requestnext frame aspa according to: https://developer.mozilla.org/en-US/docs/Games/Anatomy
+            if (!loopContext.pauseRequested) {
+                if (loopContext.ms)
+                    setTimeout(myFn, loopContext.ms);
+                else
+                    requestAnimFrame(myFn);
+
+                loopContext.callback();
+            }
+        };
+        myFn();
+    };
+
+    AnimationLoop.prototype.step = function() {
+        this.callback();
+    }
+
+    AnimationLoop.prototype.stop = function() {
+        this.pauseRequested = true;
+    }
+
+    AnimationLoop.prototype.toggle = function() {
+        if (this.pauseRequested) {
+            this.start();
+        }
+        else {
+            this.stop();
+        }
+    }
+
     if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
     var container, stats;
 
     var camera, controls, scene, renderer;
+    var group = new THREE.Object3D();
+    var group2 = new THREE.Object3D();
 
     init();
     render();
@@ -95,7 +176,6 @@
         }
 
         var loader = new THREE.STLLoader();
-        var group2 = new THREE.Object3D();
         loader.load("stl/magicshifter_case_104_top.stl", function (geometry) {
             console.log(geometry);
             var mat = new THREE.MeshLambertMaterial({color: 0x4444FF});
@@ -108,7 +188,6 @@
         });
 
         var loader = new THREE.STLLoader();
-        var group = new THREE.Object3D();
         loader.load("stl/magicshifter_case_104_bottom.stl", function (geometry) {
             console.log(geometry);
             var mat = new THREE.MeshLambertMaterial({color: 0xFF4444});
@@ -179,36 +258,25 @@
 
     }
 
-//    window.addEventListener( 'keydown', onKeyDown, false );
-//
-//    function onKeyDown( event ) {
-//
-//        if ( scope.enabled === false || scope.noKeys === true || scope.noPan === true ) return;
-//
-//        switch ( event.keyCode ) {
-//
-//            case scope.keys.SPACE:
-//               alert("sp")
-//                break;
-//
-//            case scope.keys.ESC:
-//                alert("esc")
-//                break;
-//
-//            case scope.keys.LEFT:
-//
-//                break;
-//
-//            case scope.keys.RIGHT:
-//
-//                break;
-//
-//        }
-//
-//    }
-//
+    window.addEventListener( 'keydown', onKeyDown, false );
 
+    function onKeyDown( event ) {
+        switch ( event.keyCode ) {
 
+            case 42:
+               alert("sp")
+                break;
+
+            case 27:
+                var l = new AnimationLoop(1000/60, function() {
+                    group.applyMatrix(m);
+                    render();
+                });
+                l.start();
+                break;
+
+        }
+    }
 
 </script>
 
