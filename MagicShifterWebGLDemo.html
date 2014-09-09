@@ -48,6 +48,37 @@
 
 <script>
 
+
+
+function FigureEight3(radius, height, smoothness) {
+    var loop = new THREE.ClosedSplineCurve3([
+        new THREE.Vector3(0, height, radius*2),
+        new THREE.Vector3(radius, height, radius),
+
+        new THREE.Vector3(-radius, height, -radius),
+        new THREE.Vector3(0, height, -radius*2),
+
+        new THREE.Vector3(radius, height, -radius),
+        new THREE.Vector3(-radius, height, radius)
+    ]);
+    return loop.getPoints(smoothness);
+};
+
+
+var shakePath = FigureEight3(50, 5, 400);
+
+// http://www.gingerleprechaun.com/javascript/threejs-tween-along-motion-path
+// get the position data half way along the path
+//var pathPosition = motionGuide.getPoint(0.5);
+// move the man to that position
+//object3D.position.x = pathPosition.x;
+//object3D.position.z = pathPosition.z;
+// get the orientation angle quarter way along the path
+//var tangent = motionGuide.getTangent(0.25);
+//var angle = Math.atan2(-tangent.z, tangent.x);
+// set angle of the man at that position
+//object3D.rotation.y = angle;
+
     var simState = {
         steps: 50,
         startStep: 0,
@@ -268,8 +299,14 @@
                 break;
 
             case 27:
+                   var i = 0;
                 var l = new AnimationLoop(1000/60, function() {
-                    group.applyMatrix(m);
+                    group.position.x = shakePath[i].x;
+                    group.position.y = shakePath[i].y;
+                    group.position.z = shakePath[i].z;
+                    i++;
+                    if (i >= shakePath.length)
+                        i = 0;
                     render();
                 });
                 l.start();
@@ -277,6 +314,8 @@
 
         }
     }
+
+
 
 </script>
 
