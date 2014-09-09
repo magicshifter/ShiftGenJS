@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>three.js webgl - orbit controls</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            color: #000;
+            font-family:Monospace;
+            font-size:13px;
+            text-align:center;
+            font-weight: bold;
+
+            background-color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+
+        #info {
+            color:#000;
+            position: absolute;
+            top: 0px; width: 100%;
+            padding: 5px;
+
+        }
+
+        a {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+<div id="container"></div>
+<div id="info">
+    <a href="http://threejs.org" target="_blank">three.js</a> - orbit controls example
+</div>
+
+<script src="libs/three.js"></script>
+
+<script src="libs/three/OrbitControls.js"></script>
+
+<script src="libs/three/Detector.js"></script>
+<script src="libs/three/STLLoader.js"></script>
+<script src="libs/stats.min.js"></script>
+
+<script>
+
+    if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+    var container, stats;
+
+    var camera, controls, scene, renderer;
+
+    init();
+    render();
+
+    function animate() {
+
+        requestAnimationFrame(animate);
+        controls.update();
+
+    }
+
+    function init() {
+
+        camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
+        camera.position.z = 200;
+        camera.position.y = 50;
+
+        controls = new THREE.OrbitControls( camera );
+        controls.damping = 0.2;
+        controls.addEventListener( 'change', render );
+
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+
+        // world
+
+        var geometry = new THREE.CylinderGeometry( 0, 10, 30, 4, 1 );
+        var material =  new THREE.MeshLambertMaterial( { color:0xffffff, shading: THREE.FlatShading } );
+
+        for ( var i = 0; i < 0; i ++ ) {
+
+            var mesh = new THREE.Mesh( geometry, material );
+            mesh.position.x = ( Math.random() - 0.5 ) * 1000;
+            mesh.position.y = ( Math.random() - 0.5 ) * 1000;
+            mesh.position.z = ( Math.random() - 0.5 ) * 1000;
+            mesh.updateMatrix();
+            mesh.matrixAutoUpdate = false;
+            scene.add( mesh );
+
+        }
+
+        var loader = new THREE.STLLoader();
+        var group2 = new THREE.Object3D();
+        loader.load("stl/magicshifter_case_104_top.stl", function (geometry) {
+            console.log(geometry);
+            var mat = new THREE.MeshLambertMaterial({color: 0x4444FF});
+            group2 = new THREE.Mesh(geometry, mat);
+            group2.rotateX(Math.PI);
+            //group2.rotation.x = -0.5 * Math.PI;
+            //group2.scale.set(0.6, 0.6, 0.6);
+            scene.add(group2);
+            render();
+        });
+
+        var loader = new THREE.STLLoader();
+        var group = new THREE.Object3D();
+        loader.load("stl/magicshifter_case_104_bottom.stl", function (geometry) {
+            console.log(geometry);
+            var mat = new THREE.MeshLambertMaterial({color: 0xFF4444});
+            group = new THREE.Mesh(geometry, mat);
+            group.rotateX(Math.PI)
+            //group.rotation.x = -0.5 * Math.PI;
+            //group.scale.set(0.6, 0.6, 0.6);
+            scene.add(group);
+            render();
+        });
+
+
+
+
+        // lights
+
+        light = new THREE.DirectionalLight( 0xffffff );
+        light.position.set( 1, 1, 1 );
+        scene.add( light );
+
+        light = new THREE.DirectionalLight( 0xffffff );
+        light.position.set( -1, -1, -1 );
+        scene.add( light );
+
+        light = new THREE.AmbientLight( 0x333333 );
+        scene.add( light );
+
+
+        // renderer
+
+        renderer = new THREE.WebGLRenderer( { antialias: false } );
+        renderer.setClearColor( scene.fog.color, 1 );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        container = document.getElementById( 'container' );
+        container.appendChild( renderer.domElement );
+
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '0px';
+        stats.domElement.style.zIndex = 100;
+        container.appendChild( stats.domElement );
+
+        //
+
+        window.addEventListener( 'resize', onWindowResize, false );
+
+        controls.addEventListener('change', render);
+        animate();
+
+    }
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        render();
+
+    }
+
+    function render() {
+
+        renderer.render( scene, camera );
+        stats.update();
+
+    }
+
+//    window.addEventListener( 'keydown', onKeyDown, false );
+//
+//    function onKeyDown( event ) {
+//
+//        if ( scope.enabled === false || scope.noKeys === true || scope.noPan === true ) return;
+//
+//        switch ( event.keyCode ) {
+//
+//            case scope.keys.SPACE:
+//               alert("sp")
+//                break;
+//
+//            case scope.keys.ESC:
+//                alert("esc")
+//                break;
+//
+//            case scope.keys.LEFT:
+//
+//                break;
+//
+//            case scope.keys.RIGHT:
+//
+//                break;
+//
+//        }
+//
+//    }
+//
+
+
+
+</script>
+
+</body>
+</html>
