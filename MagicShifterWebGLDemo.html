@@ -35,7 +35,7 @@
 <body>
 <div id="container"></div>
 <div id="info">
-    <a href="http://threejs.org" target="_blank">three.js</a> - orbit controls example
+    <input type="button" id="cmdShake"></input>
 </div>
 
 <script src="libs/three.js"></script>
@@ -65,7 +65,19 @@ function FigureEight3(radius, height, smoothness) {
 };
 
 
-var shakePath = FigureEight3(50, 5, 400);
+var shakePath = FigureEight3(30, 5, 200);
+
+var shakeRotZ = [];
+shakePath = [];
+
+var numPoints = 50;
+var rx = 100;
+var ry = 30;
+for (var i = 0; i < numPoints; i++) {
+    var a = Math.PI/2 + Math.PI * 0.8 * (i-numPoints/2)/numPoints;
+    shakeRotZ[i] = a;
+    shakePath[i] = new THREE.Vector3(rx*Math.cos(a), ry*Math.sin(a) - (50+ry/2), 0);
+}
 
 // http://www.gingerleprechaun.com/javascript/threejs-tween-along-motion-path
 // get the position data half way along the path
@@ -289,8 +301,34 @@ var shakePath = FigureEight3(50, 5, 400);
 
     }
 
-    window.addEventListener( 'keydown', onKeyDown, false );
 
+    var pos = 0;
+    var dir = 1;
+    var animLoop = new AnimationLoop(1000/60, function() {
+        if (pos >= 0) {
+            var groups = [group, group2];
+            for (var gi in groups) {
+                var g = groups[gi];
+                g.position.x = shakePath[pos].x;
+                g.position.y = shakePath[pos].y;
+                g.position.z = shakePath[pos].z;
+                g.rotateOnAxis(new THREE.Vector3(0, 0, 1), shakeRotZ[pos]/10)
+            }
+            pos += dir;
+            if (pos >= shakePath.length - 1)
+                dir = -1;
+            render();
+        }
+    });
+    animLoop.start();
+
+    document.getElementById("cmdShake").addEventListener("click", CmdShake, false);
+    function CmdShake() {
+        dir = 1;
+        pos = 0;
+    }
+
+    window.addEventListener( 'keydown', onKeyDown, false );
     function onKeyDown( event ) {
         switch ( event.keyCode ) {
 
@@ -314,6 +352,7 @@ var shakePath = FigureEight3(50, 5, 400);
 
         }
     }
+
 
 
 
