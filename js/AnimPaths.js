@@ -20,13 +20,15 @@ define(["Three"], function(THREE) {
     var shakeRotZ = [];
     shakePath = [];
 
-    var numPoints = 50;
+    var numPoints = 350;
     var rx = 100;
-    var ry = 30;
+    var ry = 100;
     for (var i = 0; i < numPoints; i++) {
-        var a = Math.PI / 2 + Math.PI * 0.8 * (i - numPoints / 2) / numPoints;
-        shakeRotZ[i] = a;
-        shakePath[i] = new THREE.Vector3(rx * Math.cos(a), ry * Math.sin(a) - (50 + ry / 2), 0);
+        var a = 2*Math.PI * (i - numPoints / 2) / numPoints;
+        var xx = rx * Math.cos(a);
+        var yy = ry * Math.sin(a)
+        shakeRotZ[i] = Math.atan2(xx, yy); // Math.PI/2 - a;
+        shakePath[i] = new THREE.Vector3(xx, yy, 0);
     }
 
     return {

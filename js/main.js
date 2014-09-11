@@ -55,32 +55,18 @@ require([
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-
             renderer.setSize(window.innerWidth, window.innerHeight);
-
             render();
         }
 
         var camera, controls, scene;
         var group = new THREE.Object3D();
         var group2 = new THREE.Object3D();
+        var shifterGroup
 
         var shakePath = AnimPaths.shakePath;
         var shakeRotZ = AnimPaths.shakeRotZ;
 
-
-
-// http://www.gingerleprechaun.com/javascript/threejs-tween-along-motion-path
-// get the position data half way along the path
-//var pathPosition = motionGuide.getPoint(0.5);
-// move the man to that position
-//object3D.position.x = pathPosition.x;
-//object3D.position.z = pathPosition.z;
-// get the orientation angle quarter way along the path
-//var tangent = motionGuide.getTangent(0.25);
-//var angle = Math.atan2(-tangent.z, tangent.x);
-// set angle of the man at that position
-//object3D.rotation.y = angle;
 
         var simState = {
             steps: 50,
@@ -125,7 +111,7 @@ require([
             controls.update();
 
         }
-        
+
 
         function init() {
 
@@ -135,7 +121,6 @@ require([
 
             controls = new THREE.OrbitControls(camera);
             controls.damping = 0.2;
-            controls.addEventListener('change', render);
             controls.addEventListener('change', render);
 
             scene = new THREE.Scene();
@@ -164,7 +149,7 @@ require([
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: 0x4444FF});
                 group2 = new THREE.Mesh(geometry, mat);
-                group2.rotateX(Math.PI);
+                //group2.rotateX(Math.PI);
                 //group2.rotation.x = -0.5 * Math.PI;
                 //group2.scale.set(0.6, 0.6, 0.6);
                 scene.add(group2);
@@ -176,7 +161,7 @@ require([
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: 0xFF4444});
                 group = new THREE.Mesh(geometry, mat);
-                group.rotateX(Math.PI)
+                //group.rotateX(Math.PI)
                 //group.rotation.x = -0.5 * Math.PI;
                 //group.scale.set(0.6, 0.6, 0.6);
                 scene.add(group);
@@ -197,20 +182,15 @@ require([
 
             light = new THREE.AmbientLight(0x333333);
             scene.add(light);
-
-
-            animate();
-
         }
 
         function render() {
             renderer.render(scene, camera);
             stats.update();
-
         }
 
 
-        var pos = 0;
+        var pos = -1;
         var dir = 1;
         var animLoop = new Utils.AnimationLoop(1000 / 60, function () {
             if (pos >= 0) {
@@ -220,7 +200,7 @@ require([
                     g.position.x = shakePath[pos].x;
                     g.position.y = shakePath[pos].y;
                     g.position.z = shakePath[pos].z;
-                    g.rotateOnAxis(new THREE.Vector3(0, 0, 1), shakeRotZ[pos] / 10)
+                    g.rotation.z  = -shakeRotZ[pos];
                 }
                 pos += dir;
                 if (pos >= shakePath.length - 1)
