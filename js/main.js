@@ -33,8 +33,8 @@ require.config({
 
 
 require([
-        "Utils", "Three", "Detector", "Stats", "OrbitControls", "STLLoader"],
-    function (Utils, THREE, Detector, Stats) {
+        "Utils", "AnimPaths", "Three", "Detector", "Stats", "OrbitControls", "STLLoader"],
+    function (Utils, AnimPaths, THREE, Detector, Stats) {
         "use strict";
 
         // renderer
@@ -51,39 +51,24 @@ require([
         stats.domElement.style.zIndex = 100;
         container.appendChild(stats.domElement);
 
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            render();
+        }
+
         var camera, controls, scene;
         var group = new THREE.Object3D();
         var group2 = new THREE.Object3D();
 
-
-        function FigureEight3(radius, height, smoothness) {
-            var loop = new THREE.ClosedSplineCurve3([
-                new THREE.Vector3(0, height, radius * 2),
-                new THREE.Vector3(radius, height, radius),
-
-                new THREE.Vector3(-radius, height, -radius),
-                new THREE.Vector3(0, height, -radius * 2),
-
-                new THREE.Vector3(radius, height, -radius),
-                new THREE.Vector3(-radius, height, radius)
-            ]);
-            return loop.getPoints(smoothness);
-        };
+        var shakePath = AnimPaths.shakePath;
+        var shakeRotZ = AnimPaths.shakeRotZ;
 
 
-        var shakePath = FigureEight3(30, 5, 200);
-
-        var shakeRotZ = [];
-        shakePath = [];
-
-        var numPoints = 50;
-        var rx = 100;
-        var ry = 30;
-        for (var i = 0; i < numPoints; i++) {
-            var a = Math.PI / 2 + Math.PI * 0.8 * (i - numPoints / 2) / numPoints;
-            shakeRotZ[i] = a;
-            shakePath[i] = new THREE.Vector3(rx * Math.cos(a), ry * Math.sin(a) - (50 + ry / 2), 0);
-        }
 
 // http://www.gingerleprechaun.com/javascript/threejs-tween-along-motion-path
 // get the position data half way along the path
@@ -140,6 +125,7 @@ require([
             controls.update();
 
         }
+        
 
         function init() {
 
@@ -149,6 +135,7 @@ require([
 
             controls = new THREE.OrbitControls(camera);
             controls.damping = 0.2;
+            controls.addEventListener('change', render);
             controls.addEventListener('change', render);
 
             scene = new THREE.Scene();
@@ -212,29 +199,11 @@ require([
             scene.add(light);
 
 
-
-            //
-
-            window.addEventListener('resize', onWindowResize, false);
-
-            controls.addEventListener('change', render);
             animate();
 
         }
 
-        function onWindowResize() {
-
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-
-            renderer.setSize(window.innerWidth, window.innerHeight);
-
-            render();
-
-        }
-
         function render() {
-
             renderer.render(scene, camera);
             stats.update();
 
