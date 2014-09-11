@@ -62,7 +62,9 @@ require([
         var camera, controls, scene;
         var group = new THREE.Object3D();
         var group2 = new THREE.Object3D();
-        var shifterGroup
+        var shifterGroup = new THREE.Object3D();
+        shifterGroup.add(group);
+        shifterGroup.add(group2);
 
         var shakePath = AnimPaths.shakePath;
         var shakeRotZ = AnimPaths.shakeRotZ;
@@ -124,6 +126,7 @@ require([
             controls.addEventListener('change', render);
 
             scene = new THREE.Scene();
+            scene.add(shifterGroup);
             scene.fog = new THREE.FogExp2(0xcccccc, 0.002);
             renderer.setClearColor(scene.fog.color, 1);
 
@@ -148,11 +151,11 @@ require([
             loader.load("stl/magicshifter_case_104_top.stl", function (geometry) {
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: 0x4444FF});
-                group2 = new THREE.Mesh(geometry, mat);
+                var stl = new THREE.Mesh(geometry, mat);
                 //group2.rotateX(Math.PI);
-                //group2.rotation.x = -0.5 * Math.PI;
+                //group2.rotation.x = -0.5group2 * Math.PI;
                 //group2.scale.set(0.6, 0.6, 0.6);
-                scene.add(group2);
+                group2.add(stl);
                 render();
             });
 
@@ -160,11 +163,11 @@ require([
             loader.load("stl/magicshifter_case_104_bottom.stl", function (geometry) {
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: 0xFF4444});
-                group = new THREE.Mesh(geometry, mat);
+                var stl = new THREE.Mesh(geometry, mat);
                 //group.rotateX(Math.PI)
                 //group.rotation.x = -0.5 * Math.PI;
                 //group.scale.set(0.6, 0.6, 0.6);
-                scene.add(group);
+                group.add(stl);
                 render();
             });
 
@@ -197,11 +200,18 @@ require([
                 var groups = [group, group2];
                 for (var gi in groups) {
                     var g = groups[gi];
-                    g.position.x = shakePath[pos].x;
-                    g.position.y = shakePath[pos].y;
-                    g.position.z = shakePath[pos].z;
-                    g.rotation.z  = -shakeRotZ[pos];
+
+//                    g.position.x = shakePath[pos].x;
+//                    g.position.y = shakePath[pos].y;
+//                    g.position.z = shakePath[pos].z;
+                    g.rotation.z  = shakeRotZ[pos];
+
                 }
+                shifterGroup.position.x = shakePath[pos].x;
+                shifterGroup.position.y = shakePath[pos].y;
+                shifterGroup.position.z = shakePath[pos].z;
+               // shifterGroup.rotation.z  = shakeRotZ[pos];
+
                 pos += dir;
                 if (pos >= shakePath.length - 1)
                     dir = -1;

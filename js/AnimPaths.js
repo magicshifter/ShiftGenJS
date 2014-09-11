@@ -22,12 +22,12 @@ define(["Three"], function(THREE) {
 
     var numPoints = 350;
     var rx = 100;
-    var ry = 100;
+    var ry = 50;
     for (var i = 0; i < numPoints; i++) {
         var a = 2*Math.PI * (i - numPoints / 2) / numPoints;
         var xx = rx * Math.cos(a);
         var yy = ry * Math.sin(a)
-        shakeRotZ[i] = Math.atan2(xx, yy); // Math.PI/2 - a;
+        shakeRotZ[i] = Math.atan2(xx, -yy); // Math.PI/2 - a;
         shakePath[i] = new THREE.Vector3(xx, yy, 0);
     }
 
