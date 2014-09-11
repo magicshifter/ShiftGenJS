@@ -33,13 +33,12 @@ require.config({
 
 
 require([
-        "Three", "Detector", "Stats", "OrbitControls", "STLLoader"],
-    function (THREE, Detector, Stats) {
+        "Utils", "Three", "Detector", "Stats", "OrbitControls", "STLLoader"],
+    function (Utils, THREE, Detector, Stats) {
         "use strict";
 
-
-
         // renderer
+        if (!Detector.webgl) Detector.addGetWebGLMessage();
         var renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -130,57 +129,6 @@ require([
         t.makeTranslation(simState.transX, simState.transY, simState.transZ);
         m.multiply(t);
 
-        var requestAnimFrame = (function () {
-            return  window.webkitRequestAnimationFrame ||
-                window.mozRequestAnimationFrame ||
-                function (callback, element) {
-                    setTimeout(callback, 1000 / 60);
-                };
-        })();
-
-        // if ms == 0 use AbimationLoop otherwise fixed timing
-        var AnimationLoop = function (ms, callback) {
-            this.ms = ms;
-            this.callback = callback;
-            this.pauseRequested = true;
-        };
-
-        AnimationLoop.prototype.start = function () {
-            var loopContext = this;
-            this.pauseRequested = false;
-            var myFn = function () {
-                // requestnext frame aspa according to: https://developer.mozilla.org/en-US/docs/Games/Anatomy
-                if (!loopContext.pauseRequested) {
-                    if (loopContext.ms)
-                        setTimeout(myFn, loopContext.ms);
-                    else
-                        requestAnimFrame(myFn);
-
-                    loopContext.callback();
-                }
-            };
-            myFn();
-        };
-
-        AnimationLoop.prototype.step = function () {
-            this.callback();
-        }
-
-        AnimationLoop.prototype.stop = function () {
-            this.pauseRequested = true;
-        }
-
-        AnimationLoop.prototype.toggle = function () {
-            if (this.pauseRequested) {
-                this.start();
-            }
-            else {
-                this.stop();
-            }
-        }
-
-        if (!Detector.webgl) Detector.addGetWebGLMessage();
-
 
 
         init();
@@ -251,7 +199,7 @@ require([
 
             // lights
             var light;
-            
+
             light = new THREE.DirectionalLight(0xffffff);
             light.position.set(1, 1, 1);
             scene.add(light);
@@ -295,7 +243,7 @@ require([
 
         var pos = 0;
         var dir = 1;
-        var animLoop = new AnimationLoop(1000 / 60, function () {
+        var animLoop = new Utils.AnimationLoop(1000 / 60, function () {
             if (pos >= 0) {
                 var groups = [group, group2];
                 for (var gi in groups) {
