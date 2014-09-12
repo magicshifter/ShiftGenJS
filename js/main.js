@@ -239,7 +239,7 @@ require([
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
             camera.position.z = -150;
-            camera.position.y = 0;
+            camera.position.y = 80;
 
             controls = new THREE.OrbitControls(camera);
             controls.damping = 0.2;
