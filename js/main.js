@@ -136,15 +136,28 @@ require([
         shifterGroup.add(ledGroup);
 
 
-        var geometry = new THREE.CylinderGeometry(2.5, 2.5, 2, 16, 1);
+        var geometryC = new THREE.CylinderGeometry(3.9, 3.9, 2, 4, 1);
         var ledM = new THREE.Matrix4();
+        ledM.makeRotationX(-Math.PI/2);
+        geometryC.applyMatrix(ledM);
+        ledM.makeRotationZ(-Math.PI/4);
+        geometryC.applyMatrix(ledM);
+        ledM.makeTranslation(0, 0, 2.5);
+        geometryC.applyMatrix(ledM);
+
+        var geometry = new THREE.CylinderGeometry(2.1, 2.1, 2, 16, 1);
+        ledM = new THREE.Matrix4();
         ledM.makeRotationX(-Math.PI/2);
         geometry.applyMatrix(ledM);
         ledM.makeTranslation(0, 0, 1.5);
         geometry.applyMatrix(ledM);
 
-        var geometryPov = geometry.clone();
-        ledM.makeTranslation(0, 0, -1.5);
+        var rLed = 3;
+        var geometryPov  = new THREE.CylinderGeometry(rLed, rLed, 2, 16, 1);
+        ledM = new THREE.Matrix4();
+        ledM.makeRotationX(-Math.PI/2);
+        geometryPov.applyMatrix(ledM);
+        ledM.makeTranslation(0, 0, -3);
         geometryPov.applyMatrix(ledM);
 
         for (var i = 0; i < 16; i++) {
@@ -158,8 +171,15 @@ require([
             //var material = new THREE.MeshBasicMaterial({color: 0});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
 
             var mesh = new THREE.Mesh(geometry, material);
+
+            var materialC = new THREE.MeshLambertMaterial({ color: 0x000000, shading: THREE.FlatShading });
+            //var material = new THREE.MeshBasicMaterial({color: 0});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+
+            var meshC = new THREE.Mesh(geometryC, materialC);
+
             mesh.matrixAutoUpdate = false;
             led.add(mesh);
+            led.add(meshC);
             ledMeshes[i] = mesh;
             leds[i] = led;
         }
@@ -326,7 +346,7 @@ require([
         function CmdClear() {
             while (povGroup.children.length > 0)
                 povGroup.remove(povGroup.children[0]);
-            render();           
+            render();
         }
 
         window.addEventListener('keydown', onKeyDown, false);
