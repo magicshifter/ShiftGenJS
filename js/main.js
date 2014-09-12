@@ -100,18 +100,22 @@ require([
             img.src = url;
         }
 
-        var images = document.getElementsByClassName("images");
-        for (var i = 0; i < images.length; i++) {
-            var img = images[i];
+        function addImgHandler(img) {
             img.addEventListener("click", function(evt) {
                 var target = evt.target;
                 loadHandler(target.src, CmdShake);
             }, false);
         }
 
+        var images = document.getElementsByClassName("images");
+        for (var i = 0; i < images.length; i++) {
+            var img = images[i];
+            addImgHandler(img);
+        }
+
         var imgData;
         document.getElementById("filePicture").addEventListener("change", function(event) {
-            loadHandler(URL.createObjectURL(event.target.files[0]));
+            loadHandler(URL.createObjectURL(event.target.files[0]), CmdShake);
         });
         loadHandler("imgs/NyanCatFinal2.png");
 
@@ -286,14 +290,16 @@ require([
 
         var pos = -1;
         var dir = 1;
+        var endPos = -1;
+
         var animLoop = new Utils.AnimationLoop(simState.ms, function () {
             if (pos >= 0) {
                 var groups = [group, group2, ledGroup];
                 for (var gi in groups) {
                     var g = groups[gi];
                     g.rotation.z = shakeRotZ[pos];
-                    g.rotation.y = pos/200;
-                    g.rotation.x = pos/100;
+                    g.rotation.y = pos/250;
+                    g.rotation.x = pos/140;
                 }
                 shifterGroup.position.x = shakePath[pos].x;
                 shifterGroup.position.y = shakePath[pos].y;
@@ -342,7 +348,7 @@ require([
                 }
 
                 pos += dir;
-                if (pos >= shakePath.length - 1) {
+                if (pos >= shakePath.length - 1 || pos > endPos) {
                     pos = -1;
                     dir = -1;
                 }
@@ -355,8 +361,15 @@ require([
 
         function CmdShake() {
             CmdClear();
-            dir = 1;
-            pos = 0;
+            if (imgData) {
+                dir = 1;
+                var padding = 7;
+                pos = Math.round(shakePath.length / 2 - (imgData.width / 2 + padding));
+                endPos = Math.round(shakePath.length / 2 + (imgData.width / 2 + padding));
+                if (pos < 0)
+                    pos = 0;
+                //pos = 0;
+            }
         }
 
         function CmdClear() {
