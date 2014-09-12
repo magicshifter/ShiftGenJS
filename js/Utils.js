@@ -74,8 +74,9 @@ define([], function() {
 	}
 
 	var requestAnimFrame = (function(){
-		return  window.webkitRequestAnimationFrame ||
-		window.mozRequestAnimationFrame ||
+		return window.requestAnimationFrame ||
+            window.webkitRequestAnimationFrame ||
+		    window.mozRequestAnimationFrame ||
 		function(callback, element){ setTimeout(callback, 1000 / 60); };
 	})();
 

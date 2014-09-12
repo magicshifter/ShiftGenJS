@@ -8,6 +8,7 @@ require.config({
         STLLoader: "libs/three/STLLoader",
         Stats: "libs/stats.min",
         Colour: "libs/Colour",
+        DatGUI: "libs/dat.gui.min",
     },
     shim: {
         Three: {
@@ -38,6 +39,10 @@ require.config({
                     HSVColour: HSVColour,
                 };
             }
+        },
+
+        DatGUI: {
+            exports: "dat",
         }
 
     }
@@ -45,9 +50,36 @@ require.config({
 
 
 require([
-        "Utils", "AnimPaths", "Three", "Detector", "Stats", "Colour", "OrbitControls", "STLLoader"],
-    function (Utils, AnimPaths, THREE, Detector, Stats, Colour) {
+        "Utils", "AnimPaths", "Three", "Detector", "DatGUI", "Stats", "Colour", "OrbitControls", "STLLoader"],
+    function (Utils, AnimPaths, THREE, Detector, dat, Stats, Colour) {
         "use strict";
+
+
+        var simState = {
+            ms: 100,
+            shake: function () {
+                CmdShake();
+            },
+            clear: function () {
+                CmdClear();
+            }
+        };
+
+        var gui = new dat.GUI();
+
+
+        function SetupOnChange(controller) {
+            controller.onChange(function (value) {
+                // Fires on every change, drag, keypress, etc.
+                animLoop.ms = simState.ms;
+            });
+        }
+
+
+        SetupOnChange(gui.add(simState, 'ms', 1, 500));
+        gui.add(simState, 'shake');
+        gui.add(simState, 'clear');
+
 
         var imgData;
         document.getElementById("filePicture").addEventListener("change", function(event) {
@@ -122,8 +154,8 @@ require([
 
             var col = new Colour.HSVColour(360*i/16, 100, 100);
             //var material = new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
-            //var material = new THREE.MeshLambertMaterial({ color: 0x000000, shading: THREE.FlatShading });
-            var material = new THREE.MeshBasicMaterial({color: 0});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+            var material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, shading: THREE.FlatShading });
+            //var material = new THREE.MeshBasicMaterial({color: 0});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
 
             var mesh = new THREE.Mesh(geometry, material);
             mesh.matrixAutoUpdate = false;
@@ -134,31 +166,6 @@ require([
 
         var shakePath = AnimPaths.shakePath;
         var shakeRotZ = AnimPaths.shakeRotZ;
-
-
-        var simState = {
-            steps: 50,
-            startStep: 0,
-            ledRadius: 2,
-
-            axisX: 0.1,
-            axisY: 0.9,
-            axisZ: 0.11,
-
-            startX: -100,
-            startY: 0,
-            startZ: 200,
-
-            shifterDirX: 0,
-            shifterDirY: 10,
-            shifterDirZ: 0,
-
-            transX: 0,
-            transY: 0,
-            transZ: 0,
-
-            rotSpeed: 0.035,
-        };
 
         var axis = new THREE.Vector3(simState.axisX, simState.axisY, simState.axisZ);
         axis.normalize();
@@ -281,15 +288,19 @@ require([
                         }
                         var rgb = col.getRGB();
                         var mC = new THREE.Color(rgb.r/255, rgb.g/255, rgb.b/255);
-                        ledMesh.material.color = mC.clone();
+
                         if (rgb.r > 0 || rgb.g > 0 || rgb.b > 0)
                         {
+                            ledMesh.material = new THREE.MeshBasicMaterial({color: mC});;
                             var material = new THREE.MeshBasicMaterial({color: mC});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
                             //material.color = new THREE.Color(col.getCSSIntegerRGBA());
                             var mesh = new THREE.Mesh(geometryPov, material);
                             mesh.matrix = led.matrixWorld.clone();
                             mesh.matrixAutoUpdate = false;
                             povGroup.add(mesh);
+                        }
+                        else {
+                            ledMesh.material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, shading: THREE.FlatShading });
                         }
                     }
                 }
@@ -305,11 +316,17 @@ require([
         animLoop.start();
 
         document.getElementById("cmdShake").addEventListener("click", CmdShake, false);
+
         function CmdShake() {
+            CmdClear();
             dir = 1;
             pos = 0;
+        }
+
+        function CmdClear() {
             while (povGroup.children.length > 0)
                 povGroup.remove(povGroup.children[0]);
+            render();           
         }
 
         window.addEventListener('keydown', onKeyDown, false);
