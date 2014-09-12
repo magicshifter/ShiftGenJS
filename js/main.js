@@ -96,7 +96,7 @@ require([
         var group2 = new THREE.Object3D();
         var shifterGroup = new THREE.Object3D();
         var ledGroup = new THREE.Object3D();
-        var leds = [];
+        var leds = [], ledMeshes = [];
         var povGroup = new THREE.Object3D();
 
         shifterGroup.add(group);
@@ -111,8 +111,9 @@ require([
         ledM.makeTranslation(0, 0, 1.5);
         geometry.applyMatrix(ledM);
 
-
-
+        var geometryPov = geometry.clone();
+        ledM.makeTranslation(0, 0, -1.5);
+        geometryPov.applyMatrix(ledM);
 
         for (var i = 0; i < 16; i++) {
             var led = new THREE.Object3D();
@@ -120,10 +121,14 @@ require([
             ledGroup.add(led);
 
             var col = new Colour.HSVColour(360*i/16, 100, 100);
-            var material = new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+            //var material = new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+            //var material = new THREE.MeshLambertMaterial({ color: 0x000000, shading: THREE.FlatShading });
+            var material = new THREE.MeshBasicMaterial({color: 0});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+
             var mesh = new THREE.Mesh(geometry, material);
             mesh.matrixAutoUpdate = false;
             led.add(mesh);
+            ledMeshes[i] = mesh;
             leds[i] = led;
         }
 
@@ -238,12 +243,14 @@ require([
 
         var pos = -1;
         var dir = 1;
-        var animLoop = new Utils.AnimationLoop(1000 / 60, function () {
+        var animLoop = new Utils.AnimationLoop(1, function () {
             if (pos >= 0) {
                 var groups = [group, group2, ledGroup];
                 for (var gi in groups) {
                     var g = groups[gi];
                     g.rotation.z = shakeRotZ[pos];
+                    g.rotation.y = pos/200;
+                    g.rotation.x = pos/100;
                 }
                 shifterGroup.position.x = shakePath[pos].x;
                 shifterGroup.position.y = shakePath[pos].y;
@@ -252,26 +259,34 @@ require([
                 if (dir > 0) {
                     for (var i in leds) {
                         var led = leds[i];
+                        var ledMesh = ledMeshes[i];
 
                         var col = new Colour.HSVColour(360*pos/shakePath.length, 100, 100, 0.3);
-                        if (imgData) {
-                            var x = pos;
-                            x = x % imgData.width;
-                            var y = 15-i;
 
-                            var raw = imgData.data;
-                            var idx = x*4 + imgData.width*4*y;
-                            if (idx >= 0 && idx < raw.length) {
-                                col = new Colour.RGBColour(raw[idx], raw[idx + 1], raw[idx + 2], raw[idx + 3] / 255.0, 0.3);
+                        if (imgData) {
+                            var x = pos + Math.round(imgData.width/2 - shakePath.length/2);
+                            //x = pos;
+                            if (x < 0 || x >= imgData.width){
+                                col = new Colour.RGBColour(0,0,0);
+                            }
+                            else {
+                                var y = 15 - i;
+
+                                var raw = imgData.data;
+                                var idx = x * 4 + imgData.width * 4 * y;
+                                if (idx >= 0 && idx < raw.length) {
+                                    col = new Colour.RGBColour(raw[idx], raw[idx + 1], raw[idx + 2], raw[idx + 3] / 255.0, 0.3);
+                                }
                             }
                         }
                         var rgb = col.getRGB();
-                        //if (rgb.r > 0 || rgb.g > 0 || rgb.b > 0)
+                        var mC = new THREE.Color(rgb.r/255, rgb.g/255, rgb.b/255);
+                        ledMesh.material.color = mC.clone();
+                        if (rgb.r > 0 || rgb.g > 0 || rgb.b > 0)
                         {
-                            var mC = new THREE.Color(rgb.r/255, rgb.g/255, rgb.b/255);
                             var material = new THREE.MeshBasicMaterial({color: mC});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
                             //material.color = new THREE.Color(col.getCSSIntegerRGBA());
-                            var mesh = new THREE.Mesh(geometry, material);
+                            var mesh = new THREE.Mesh(geometryPov, material);
                             mesh.matrix = led.matrixWorld.clone();
                             mesh.matrixAutoUpdate = false;
                             povGroup.add(mesh);
