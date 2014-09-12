@@ -80,9 +80,7 @@ require([
         gui.add(simState, 'shake');
         gui.add(simState, 'clear');
 
-
-        var imgData;
-        document.getElementById("filePicture").addEventListener("change", function(event) {
+        function loadHandler(url) {
             var img = new Image;
             img.onload = function() {
                 var canvas = document.getElementById('canvasActiveBitmap');
@@ -98,8 +96,14 @@ require([
                 imgData = ctx.getImageData(0,0,w,h);
                 simState.steps = w;
             };
-            img.src = URL.createObjectURL(event.target.files[0]);
+            img.src = url;
+        }
+
+        var imgData;
+        document.getElementById("filePicture").addEventListener("change", function(event) {
+            loadHandler(URL.createObjectURL(event.target.files[0]));
         });
+        loadHandler("imgs/NyanCatFinal2.png");
 
         // renderer
         if (!Detector.webgl) Detector.addGetWebGLMessage();
@@ -353,22 +357,12 @@ require([
         function onKeyDown(event) {
             switch (event.keyCode) {
 
-                case 42:
-                    alert("sp")
+                case 0x53:
+                    CmdShake();
                     break;
 
-                case 27:
-                    var i = 0;
-                    var l = new AnimationLoop(1000 / 60, function () {
-                        group.position.x = shakePath[i].x;
-                        group.position.y = shakePath[i].y;
-                        group.position.z = shakePath[i].z;
-                        i++;
-                        if (i >= shakePath.length)
-                            i = 0;
-                        render();
-                    });
-                    l.start();
+                case 0x43:
+                    CmdClear();
                     break;
 
             }
