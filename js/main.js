@@ -113,11 +113,12 @@ require([
         var container = document.getElementById('container');
         container.appendChild(renderer.domElement);
 
-        var stats = new Stats();
-        stats.domElement.style.position = 'absolute';
-        stats.domElement.style.top = '0px';
-        stats.domElement.style.zIndex = 100;
-        container.appendChild(stats.domElement);
+
+        //var stats = new Stats();
+        //stats.domElement.style.position = 'absolute';
+        //stats.domElement.style.top = '0px';
+        ///stats.domElement.style.zIndex = 100;
+        //container.appendChild(stats.domElement);
 
         window.addEventListener('resize', onWindowResize, false);
         function onWindowResize() {
@@ -268,7 +269,7 @@ require([
 
         function render() {
             renderer.render(scene, camera);
-            stats.update();
+            //stats.update();
         }
 
 
