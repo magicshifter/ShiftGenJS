@@ -7,7 +7,8 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <style>
         body {
-            color: #000;
+            background-color: #000;
+            color: #fff;
             font-family:Monospace;
             font-size:13px;
             text-align:center;
@@ -26,22 +27,49 @@
 
         }
 
+        .images {
+
+        }
+
+        .images {
+            padding: 2px;
+            border: 1px solid #000;
+        }
+
+        .images:hover {
+            border: 1px solid #d0d0d0;
+        }
+
         a {
             color: red;
         }
     </style>
+    <script data-main="js/main" src="js/libs/require-src.js"></script>
 </head>
 
 <body>
-<div id="container">
-</div>
-<div id="info">
-    <input type="file" id="filePicture" accept="image/*">
-    <canvas id="canvasActiveBitmap" height="16"></canvas>
-</div>
 
-<script data-main="js/main" src="js/libs/require-src.js"></script>
+    <div style="position: fixed; top: 5px; left: 5px;">
+        <div style="float: left;" id="imageList">
+            <img class="images" src="imgs/fireball.png" />
+            <img class="images" src="imgs/NyanCatFinal0.png" />
+            <img class="images" src="imgs/oneup.png" />
+            <img class="images" src="imgs/shroom.gif" />
+            <img class="images" src="imgs/star.png" />
+            <img class="images" src="imgs/big_smile.gif" />
+            <img class="images" src="imgs/icePink.gif" />
+            <img class="images" src="imgs/iceBlue.gif" />
+            <img class="images" src="imgs/iceYellow.gif" />
+            <img class="images" src="imgs/30c3.png" />
+            <img class="images" src="imgs/Metalab.png" />
+            <img class="images" src="imgs/Metalab2.png" />
+        </div><br>
+        <div style="float: left;"><input type="file" id="filePicture" accept="image/*"></div><br>
+        <div style="float: right;"><canvas id="canvasActiveBitmap" height="16"></canvas></div>
+    </div>
 
+    <div id="container">
+    </div>
 
 </body>
 </html>

@@ -80,7 +80,7 @@ require([
         gui.add(simState, 'shake');
         gui.add(simState, 'clear');
 
-        function loadHandler(url) {
+        function loadHandler(url, callback) {
             var img = new Image;
             img.onload = function() {
                 var canvas = document.getElementById('canvasActiveBitmap');
@@ -94,9 +94,19 @@ require([
                 ctx.drawImage(img, 0, 0);
 
                 imgData = ctx.getImageData(0,0,w,h);
-                simState.steps = w;
+                if (callback)
+                    callback();
             };
             img.src = url;
+        }
+
+        var images = document.getElementsByClassName("images");
+        for (var i = 0; i < images.length; i++) {
+            var img = images[i];
+            img.addEventListener("click", function(evt) {
+                var target = evt.target;
+                loadHandler(target.src, CmdShake);
+            }, false);
         }
 
         var imgData;
@@ -150,19 +160,20 @@ require([
         ledM.makeTranslation(0, 0, 2.5);
         geometryC.applyMatrix(ledM);
 
-        var geometry = new THREE.CylinderGeometry(2.1, 2.1, 2, 16, 1);
+        var rLed = 2.1;
+        var geometry = new THREE.CylinderGeometry(rLed, rLed, 2, 16, 1);
         ledM = new THREE.Matrix4();
         ledM.makeRotationX(-Math.PI/2);
         geometry.applyMatrix(ledM);
         ledM.makeTranslation(0, 0, 1.5);
         geometry.applyMatrix(ledM);
 
-        var rLed = 3;
-        var geometryPov  = new THREE.CylinderGeometry(rLed, rLed, 2, 16, 1);
+        var rPovLed = 2.3;
+        var geometryPov  = new THREE.CylinderGeometry(rPovLed, rPovLed, 2, 16, 1);
         ledM = new THREE.Matrix4();
         ledM.makeRotationX(-Math.PI/2);
         geometryPov.applyMatrix(ledM);
-        ledM.makeTranslation(0, 0, -3);
+        ledM.makeTranslation(0, 0, -4);
         geometryPov.applyMatrix(ledM);
 
         for (var i = 0; i < 16; i++) {
