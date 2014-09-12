@@ -57,6 +57,8 @@ require([
 
         var simState = {
             ms: 1,
+            showTop: true,
+            showBottom: true,
             shake: function () {
                 CmdShake();
             },
@@ -72,11 +74,16 @@ require([
             controller.onChange(function (value) {
                 // Fires on every change, drag, keypress, etc.
                 animLoop.ms = simState.ms;
+                group.visible = simState.showTop;
+                group2.visible = simState.showBottom;
+                render();
             });
         }
 
 
         SetupOnChange(gui.add(simState, 'ms', 1, 500));
+        SetupOnChange(gui.add(simState, 'showTop'));
+        SetupOnChange(gui.add(simState, 'showBottom'));
         gui.add(simState, 'shake');
         gui.add(simState, 'clear');
 
@@ -117,7 +124,7 @@ require([
         document.getElementById("filePicture").addEventListener("change", function(event) {
             loadHandler(URL.createObjectURL(event.target.files[0]), CmdShake);
         });
-        loadHandler("imgs/NyanCatFinal2.png");
+        loadHandler("imgs/NyanCatFinal2.png", CmdShake);
 
         // renderer
         if (!Detector.webgl) Detector.addGetWebGLMessage();
