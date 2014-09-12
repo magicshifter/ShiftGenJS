@@ -49,6 +49,26 @@ require([
     function (Utils, AnimPaths, THREE, Detector, Stats, Colour) {
         "use strict";
 
+        var imgData;
+        document.getElementById("filePicture").addEventListener("change", function(event) {
+            var img = new Image;
+            img.onload = function() {
+                var canvas = document.getElementById('canvasActiveBitmap');
+
+                var w = img.width;
+                var h = img.height;
+                canvas.width = w;
+                canvas.height = h;
+
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                imgData = ctx.getImageData(0,0,w,h);
+                simState.steps = w;
+            };
+            img.src = URL.createObjectURL(event.target.files[0]);
+        });
+
         // renderer
         if (!Detector.webgl) Detector.addGetWebGLMessage();
         var renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -159,8 +179,8 @@ require([
         function init() {
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.z = -200;
-            camera.position.y = 50;
+            camera.position.z = -150;
+            camera.position.y = 0;
 
             controls = new THREE.OrbitControls(camera);
             controls.damping = 0.2;
@@ -169,32 +189,17 @@ require([
             scene = new THREE.Scene();
             scene.add(shifterGroup);
             scene.add(povGroup);
-            scene.fog = new THREE.FogExp2(0xcccccc, 0.002);
-            renderer.setClearColor(scene.fog.color, 1);
-
-            // world
+            scene.fog = null; // new THREE.FogExp2(0x000000, 0.002);
+            renderer.setClearColor(0x000000, 1);
 
 
-            for (var i = 0; i < 0; i++) {
-
-                var mesh = new THREE.Mesh(geometry, material);
-                mesh.position.x = ( Math.random() - 0.5 ) * 1000;
-                mesh.position.y = ( Math.random() - 0.5 ) * 1000;
-                mesh.position.z = ( Math.random() - 0.5 ) * 1000;
-                mesh.updateMatrix();
-                mesh.matrixAutoUpdate = false;
-                scene.add(mesh);
-
-            }
-
+            // load STLs async
             var loader = new THREE.STLLoader();
             loader.load("stl/magicshifter_case_104_top.stl", function (geometry) {
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: 0xFFFF00});
                 var stl = new THREE.Mesh(geometry, mat);
-                //group2.rotateX(Math.PI);
-                //group2.rotation.x = -0.5group2 * Math.PI;
-                //group2.scale.set(0.6, 0.6, 0.6);
+                //stl.rotateX(Math.PI);
                 group2.add(stl);
                 render();
             });
@@ -204,9 +209,7 @@ require([
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: 0x000000});
                 var stl = new THREE.Mesh(geometry, mat);
-                //group.rotateX(Math.PI)
-                //group.rotation.x = -0.5 * Math.PI;
-                //group.scale.set(0.6, 0.6, 0.6);
+                //stl.rotateX(Math.PI)
                 group.add(stl);
                 render();
             });
@@ -240,29 +243,47 @@ require([
                 var groups = [group, group2, ledGroup];
                 for (var gi in groups) {
                     var g = groups[gi];
-                    g.rotation.z  = shakeRotZ[pos];
+                    g.rotation.z = shakeRotZ[pos];
                 }
                 shifterGroup.position.x = shakePath[pos].x;
                 shifterGroup.position.y = shakePath[pos].y;
                 shifterGroup.position.z = shakePath[pos].z;
 
-                if (dir > 0 && pos % 2 == 0) {
-                    //var geometry = new THREE.CylinderGeometry(0, 10, 30, 4, 1);
-                    var material = new THREE.MeshLambertMaterial({ color: 0xffffff, shading: THREE.FlatShading });
-
+                if (dir > 0) {
                     for (var i in leds) {
                         var led = leds[i];
 
-                        var mesh = new THREE.Mesh(geometry, material);
-                        mesh.matrix = led.matrixWorld.clone();
-                        mesh.matrixAutoUpdate = false;
-                        povGroup.add(mesh);
+                        var col = new Colour.HSVColour(360*pos/shakePath.length, 100, 100, 0.3);
+                        if (imgData) {
+                            var x = pos;
+                            x = x % imgData.width;
+                            var y = 15-i;
+
+                            var raw = imgData.data;
+                            var idx = x*4 + imgData.width*4*y;
+                            if (idx >= 0 && idx < raw.length) {
+                                col = new Colour.RGBColour(raw[idx], raw[idx + 1], raw[idx + 2], raw[idx + 3] / 255.0, 0.3);
+                            }
+                        }
+                        var rgb = col.getRGB();
+                        //if (rgb.r > 0 || rgb.g > 0 || rgb.b > 0)
+                        {
+                            var mC = new THREE.Color(rgb.r/255, rgb.g/255, rgb.b/255);
+                            var material = new THREE.MeshBasicMaterial({color: mC});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+                            //material.color = new THREE.Color(col.getCSSIntegerRGBA());
+                            var mesh = new THREE.Mesh(geometry, material);
+                            mesh.matrix = led.matrixWorld.clone();
+                            mesh.matrixAutoUpdate = false;
+                            povGroup.add(mesh);
+                        }
                     }
                 }
 
                 pos += dir;
-                if (pos >= shakePath.length - 1)
+                if (pos >= shakePath.length - 1) {
+                    pos = -1;
                     dir = -1;
+                }
                 render();
             }
         });
