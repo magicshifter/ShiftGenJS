@@ -7,6 +7,7 @@ require.config({
         Detector: "libs/three/Detector",
         STLLoader: "libs/three/STLLoader",
         Stats: "libs/stats.min",
+        Colour: "libs/Colour",
     },
     shim: {
         Three: {
@@ -28,13 +29,24 @@ require.config({
             exports: "Stats",
         },
 
+        Colour: {
+            deps: [],
+            exports: "Colour",
+            init: function() {
+                return {
+                    RGBColour: RGBColour,
+                    HSVColour: HSVColour,
+                };
+            }
+        }
+
     }
 });
 
 
 require([
-        "Utils", "AnimPaths", "Three", "Detector", "Stats", "OrbitControls", "STLLoader"],
-    function (Utils, AnimPaths, THREE, Detector, Stats) {
+        "Utils", "AnimPaths", "Three", "Detector", "Stats", "Colour", "OrbitControls", "STLLoader"],
+    function (Utils, AnimPaths, THREE, Detector, Stats, Colour) {
         "use strict";
 
         // renderer
@@ -63,8 +75,37 @@ require([
         var group = new THREE.Object3D();
         var group2 = new THREE.Object3D();
         var shifterGroup = new THREE.Object3D();
+        var ledGroup = new THREE.Object3D();
+        var leds = [];
+        var povGroup = new THREE.Object3D();
+
         shifterGroup.add(group);
         shifterGroup.add(group2);
+        shifterGroup.add(ledGroup);
+
+
+        var geometry = new THREE.CylinderGeometry(2.5, 2.5, 2, 16, 1);
+        var ledM = new THREE.Matrix4();
+        ledM.makeRotationX(-Math.PI/2);
+        geometry.applyMatrix(ledM);
+        ledM.makeTranslation(0, 0, 1.5);
+        geometry.applyMatrix(ledM);
+
+
+
+
+        for (var i = 0; i < 16; i++) {
+            var led = new THREE.Object3D();
+            led.translateY(-(5+i*(95/16)));
+            ledGroup.add(led);
+
+            var col = new Colour.HSVColour(360*i/16, 100, 100);
+            var material = new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+            var mesh = new THREE.Mesh(geometry, material);
+            mesh.matrixAutoUpdate = false;
+            led.add(mesh);
+            leds[i] = led;
+        }
 
         var shakePath = AnimPaths.shakePath;
         var shakeRotZ = AnimPaths.shakeRotZ;
@@ -118,7 +159,7 @@ require([
         function init() {
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.z = 200;
+            camera.position.z = -200;
             camera.position.y = 50;
 
             controls = new THREE.OrbitControls(camera);
@@ -127,13 +168,12 @@ require([
 
             scene = new THREE.Scene();
             scene.add(shifterGroup);
+            scene.add(povGroup);
             scene.fog = new THREE.FogExp2(0xcccccc, 0.002);
             renderer.setClearColor(scene.fog.color, 1);
 
             // world
 
-            var geometry = new THREE.CylinderGeometry(0, 10, 30, 4, 1);
-            var material = new THREE.MeshLambertMaterial({ color: 0xffffff, shading: THREE.FlatShading });
 
             for (var i = 0; i < 0; i++) {
 
@@ -150,7 +190,7 @@ require([
             var loader = new THREE.STLLoader();
             loader.load("stl/magicshifter_case_104_top.stl", function (geometry) {
                 console.log(geometry);
-                var mat = new THREE.MeshLambertMaterial({color: 0x4444FF});
+                var mat = new THREE.MeshLambertMaterial({color: 0xFFFF00});
                 var stl = new THREE.Mesh(geometry, mat);
                 //group2.rotateX(Math.PI);
                 //group2.rotation.x = -0.5group2 * Math.PI;
@@ -162,7 +202,7 @@ require([
             var loader = new THREE.STLLoader();
             loader.load("stl/magicshifter_case_104_bottom.stl", function (geometry) {
                 console.log(geometry);
-                var mat = new THREE.MeshLambertMaterial({color: 0xFF4444});
+                var mat = new THREE.MeshLambertMaterial({color: 0x000000});
                 var stl = new THREE.Mesh(geometry, mat);
                 //group.rotateX(Math.PI)
                 //group.rotation.x = -0.5 * Math.PI;
@@ -197,20 +237,28 @@ require([
         var dir = 1;
         var animLoop = new Utils.AnimationLoop(1000 / 60, function () {
             if (pos >= 0) {
-                var groups = [group, group2];
+                var groups = [group, group2, ledGroup];
                 for (var gi in groups) {
                     var g = groups[gi];
-
-//                    g.position.x = shakePath[pos].x;
-//                    g.position.y = shakePath[pos].y;
-//                    g.position.z = shakePath[pos].z;
                     g.rotation.z  = shakeRotZ[pos];
-
                 }
                 shifterGroup.position.x = shakePath[pos].x;
                 shifterGroup.position.y = shakePath[pos].y;
                 shifterGroup.position.z = shakePath[pos].z;
-               // shifterGroup.rotation.z  = shakeRotZ[pos];
+
+                if (dir > 0 && pos % 2 == 0) {
+                    //var geometry = new THREE.CylinderGeometry(0, 10, 30, 4, 1);
+                    var material = new THREE.MeshLambertMaterial({ color: 0xffffff, shading: THREE.FlatShading });
+
+                    for (var i in leds) {
+                        var led = leds[i];
+
+                        var mesh = new THREE.Mesh(geometry, material);
+                        mesh.matrix = led.matrixWorld.clone();
+                        mesh.matrixAutoUpdate = false;
+                        povGroup.add(mesh);
+                    }
+                }
 
                 pos += dir;
                 if (pos >= shakePath.length - 1)
@@ -224,6 +272,8 @@ require([
         function CmdShake() {
             dir = 1;
             pos = 0;
+            while (povGroup.children.length > 0)
+                povGroup.remove(povGroup.children[0]);
         }
 
         window.addEventListener('keydown', onKeyDown, false);

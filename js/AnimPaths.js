@@ -20,9 +20,9 @@ define(["Three"], function(THREE) {
     var shakeRotZ = [];
     shakePath = [];
 
-    var numPoints = 350;
+    var numPoints = 300;
     var rx = 100;
-    var ry = 50;
+    var ry = 30;
     for (var i = 0; i < numPoints; i++) {
         var a = 2*Math.PI * (i - numPoints / 2) / numPoints;
         var xx = rx * Math.cos(a);
