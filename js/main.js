@@ -56,7 +56,7 @@ require([
 
 
         var simState = {
-            ms: 100,
+            ms: 1,
             shake: function () {
                 CmdShake();
             },
@@ -275,7 +275,7 @@ require([
 
         var pos = -1;
         var dir = 1;
-        var animLoop = new Utils.AnimationLoop(1, function () {
+        var animLoop = new Utils.AnimationLoop(simState.ms, function () {
             if (pos >= 0) {
                 var groups = [group, group2, ledGroup];
                 for (var gi in groups) {
@@ -340,7 +340,7 @@ require([
         });
         animLoop.start();
 
-        document.getElementById("cmdShake").addEventListener("click", CmdShake, false);
+        //document.getElementById("cmdShake").addEventListener("click", CmdShake, false);
 
         function CmdShake() {
             CmdClear();
