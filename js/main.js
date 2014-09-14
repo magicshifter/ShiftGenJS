@@ -59,6 +59,13 @@ require([
             ms: 1,
             showTop: true,
             showBottom: true,
+
+            renderWidth: 2800,
+            renderHeight: 1575,
+            render: function() {
+                CmdRender();
+            },
+
             shake: function () {
                 CmdShake();
             },
@@ -84,6 +91,9 @@ require([
         SetupOnChange(gui.add(simState, 'ms', 1, 500));
         SetupOnChange(gui.add(simState, 'showTop'));
         SetupOnChange(gui.add(simState, 'showBottom'));
+        SetupOnChange(gui.add(simState, 'renderWidth'));
+        SetupOnChange(gui.add(simState, 'renderHeight'));
+        gui.add(simState, 'render');
         gui.add(simState, 'shake');
         gui.add(simState, 'clear');
 
@@ -143,10 +153,7 @@ require([
 
         window.addEventListener('resize', onWindowResize, false);
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            render();
+            resize(window.innerWidth, window.innerHeight);
         }
 
         var camera, controls, scene;
@@ -160,6 +167,17 @@ require([
         shifterGroup.add(group);
         shifterGroup.add(group2);
         shifterGroup.add(ledGroup);
+
+        group.visible = simState.showTop;
+        group2.visible = simState.showBottom;
+
+        var geometryPcb = new THREE.BoxGeometry( 25, 100, 1 );
+        var materialPcb = new THREE.MeshBasicMaterial( {color: 0x001000} );
+        var mPcb = new THREE.Matrix4();
+        mPcb.makeTranslation(0, -50, 3.5);
+        geometryPcb.applyMatrix(mPcb);
+        var pcb = new THREE.Mesh( geometryPcb, materialPcb );
+        shifterGroup.add( pcb );
 
 
         var geometryC = new THREE.CylinderGeometry(3.9, 3.9, 2, 4, 1);
@@ -266,7 +284,7 @@ require([
             var loader = new THREE.STLLoader();
             loader.load("stl/magicshifter_case_104_bottom.stl", function (geometry) {
                 console.log(geometry);
-                var mat = new THREE.MeshLambertMaterial({color: 0x000000});
+                var mat = new THREE.MeshLambertMaterial({color: 0xFFFFFF});
                 var stl = new THREE.Mesh(geometry, mat);
                 //stl.rotateX(Math.PI)
                 group.add(stl);
@@ -285,6 +303,13 @@ require([
             light.position.set(-1, -1, -1);
             scene.add(light);
 
+            light = new THREE.DirectionalLight(0xffffff);
+            light.position.set(-1, 1, -1);
+            scene.add(light);
+
+
+
+
             light = new THREE.AmbientLight(0x333333);
             scene.add(light);
         }
@@ -301,7 +326,7 @@ require([
 
         var animLoop = new Utils.AnimationLoop(simState.ms, function () {
             if (pos >= 0) {
-                var groups = [group, group2, ledGroup];
+                var groups = shifterGroup.children;
                 for (var gi in groups) {
                     var g = groups[gi];
                     g.rotation.z = shakeRotZ[pos];
@@ -366,6 +391,8 @@ require([
 
         //document.getElementById("cmdShake").addEventListener("click", CmdShake, false);
 
+
+
         function CmdShake() {
             CmdClear();
             if (imgData) {
@@ -385,6 +412,21 @@ require([
             render();
         }
 
+        function resize(w, h) {
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            render();
+        }
+
+        function CmdRender() {
+            var w = simState.renderWidth;
+            var h = simState.renderHeight;
+            resize(w, h);
+            window.open( renderer.domElement.toDataURL("image/png"), "Final");
+            onWindowResize()
+        }
+
         window.addEventListener('keydown', onKeyDown, false);
         function onKeyDown(event) {
             switch (event.keyCode) {
@@ -395,6 +437,10 @@ require([
 
                 case 0x43:
                     CmdClear();
+                    break;
+
+                case 0x42: // B
+                    CmdRender();
                     break;
 
             }
