@@ -59,6 +59,125 @@ require([
     function (Utils, AnimPaths, THREE, Detector, dat, Stats, Colour) {
         "use strict";
 
+        var simState = {
+            enableMouseView: true,
+            ms: 1,
+
+            showTop: true,
+            showBottom: true,
+
+            colorTop: "#222222",
+            colorBottom: "#222222",
+
+            renderWidth: 2800,
+            renderHeight: 1575,
+            render: function() {
+                CmdRender();
+            },
+
+            shake: function () {
+                CmdShake();
+            },
+            clear: function () {
+                CmdClear();
+            }
+        };
+
+
+        // renderer
+        if (!Detector.webgl) Detector.addGetWebGLMessage();
+        var renderer = new THREE.WebGLRenderer({ antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        var container = document.getElementById('container');
+        container.appendChild(renderer.domElement);
+
+
+        //var stats = new Stats();
+        //stats.domElement.style.position = 'absolute';
+        //stats.domElement.style.top = '0px';
+        ///stats.domElement.style.zIndex = 100;
+        //container.appendChild(stats.domElement);
+
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            resize(window.innerWidth, window.innerHeight);
+        }
+
+        var camera, controls, scene;
+        var group = new THREE.Object3D();
+        var group2 = new THREE.Object3D();
+        var shifterGroup = new THREE.Object3D();
+        var ledGroup = new THREE.Object3D();
+        var leds = [], ledMeshes = [];
+        var povGroup = new THREE.Object3D();
+
+        shifterGroup.add(group);
+        shifterGroup.add(group2);
+        shifterGroup.add(ledGroup);
+
+        group.visible = simState.showTop;
+        group2.visible = simState.showBottom;
+
+        var geometryPcb = new THREE.BoxGeometry( 25, 100, 1 );
+        var materialPcb = new THREE.MeshLambertMaterial( {color: 0x000000} );
+        var mPcb = new THREE.Matrix4();
+        mPcb.makeTranslation(0, -50, 3.5);
+        geometryPcb.applyMatrix(mPcb);
+        var pcb = new THREE.Mesh( geometryPcb, materialPcb );
+        shifterGroup.add( pcb );
+
+
+        var geometryC = new THREE.CylinderGeometry(3.9, 3.9, 2, 4, 1);
+        var ledM = new THREE.Matrix4();
+        ledM.makeRotationX(-Math.PI/2);
+        geometryC.applyMatrix(ledM);
+        ledM.makeRotationZ(-Math.PI/4);
+        geometryC.applyMatrix(ledM);
+        ledM.makeTranslation(0, 0, 2.5);
+        geometryC.applyMatrix(ledM);
+
+        var rLed = 2.1;
+        var geometry = new THREE.CylinderGeometry(rLed, rLed, 2, 16, 1);
+        ledM = new THREE.Matrix4();
+        ledM.makeRotationX(-Math.PI/2);
+        geometry.applyMatrix(ledM);
+        ledM.makeTranslation(0, 0, 1.5);
+        geometry.applyMatrix(ledM);
+
+        var rPovLed = 2.3;
+        var geometryPov  = new THREE.CylinderGeometry(rPovLed, rPovLed, 2, 16, 1);
+        ledM = new THREE.Matrix4();
+        ledM.makeRotationX(-Math.PI/2);
+        geometryPov.applyMatrix(ledM);
+        ledM.makeTranslation(0, 0, -4);
+        geometryPov.applyMatrix(ledM);
+
+        for (var i = 0; i < 16; i++) {
+            var led = new THREE.Object3D();
+            led.translateY(-(5+i*(95/16)));
+            ledGroup.add(led);
+
+            var col = new Colour.HSVColour(360*i/16, 100, 100);
+            //var material = new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+            var material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, shading: THREE.FlatShading });
+            //var material = new THREE.MeshBasicMaterial({color: 0});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+
+            var mesh = new THREE.Mesh(geometry, material);
+
+            var materialC = new THREE.MeshLambertMaterial({ color: 0x000000, shading: THREE.FlatShading });
+            //var material = new THREE.MeshBasicMaterial({color: 0});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
+
+            var meshC = new THREE.Mesh(geometryC, materialC);
+
+            mesh.matrixAutoUpdate = false;
+            led.add(mesh);
+            led.add(meshC);
+            ledMeshes[i] = mesh;
+            leds[i] = led;
+        }
+
+
 
 
         function createShaderMaterial(id, light, vs, fs) {
@@ -119,25 +238,6 @@ require([
             init();
         }
 
-        var simState = {
-            ms: 1,
-            showTop: true,
-            showBottom: true,
-
-            renderWidth: 2800,
-            renderHeight: 1575,
-            render: function() {
-                CmdRender();
-            },
-
-            shake: function () {
-                CmdShake();
-            },
-            clear: function () {
-                CmdClear();
-            }
-        };
-
         var gui = new dat.GUI();
 
 
@@ -147,14 +247,25 @@ require([
                 animLoop.ms = simState.ms;
                 group.visible = simState.showTop;
                 group2.visible = simState.showBottom;
+
+                controls.enabled = simState.enableMouseView;
+                if (shifterTop) {
+                    shifterTop.material.color = new THREE.Color(simState.colorTop);
+                }
+                if (shifterBottom) {
+                    shifterBottom.material.color = new THREE.Color(simState.colorBottom);
+                }
                 render();
             });
         }
 
 
+        SetupOnChange(gui.add(simState, 'enableMouseView'));
         SetupOnChange(gui.add(simState, 'ms', 1, 500));
         SetupOnChange(gui.add(simState, 'showTop'));
+        SetupOnChange(gui.addColor(simState, 'colorTop'));
         SetupOnChange(gui.add(simState, 'showBottom'));
+        SetupOnChange(gui.addColor(simState, 'colorBottom'));
         SetupOnChange(gui.add(simState, 'renderWidth'));
         SetupOnChange(gui.add(simState, 'renderHeight'));
         gui.add(simState, 'render');
@@ -200,110 +311,9 @@ require([
         });
         loadHandler("imgs/NyanCatFinal2.png", CmdShake);
 
-        // renderer
-        if (!Detector.webgl) Detector.addGetWebGLMessage();
-        var renderer = new THREE.WebGLRenderer({ antialias: false });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-
-        var container = document.getElementById('container');
-        container.appendChild(renderer.domElement);
-
-
-        //var stats = new Stats();
-        //stats.domElement.style.position = 'absolute';
-        //stats.domElement.style.top = '0px';
-        ///stats.domElement.style.zIndex = 100;
-        //container.appendChild(stats.domElement);
-
-        window.addEventListener('resize', onWindowResize, false);
-        function onWindowResize() {
-            resize(window.innerWidth, window.innerHeight);
-        }
-
-        var camera, controls, scene;
-        var group = new THREE.Object3D();
-        var group2 = new THREE.Object3D();
-        var shifterGroup = new THREE.Object3D();
-        var ledGroup = new THREE.Object3D();
-        var leds = [], ledMeshes = [];
-        var povGroup = new THREE.Object3D();
-
-        shifterGroup.add(group);
-        shifterGroup.add(group2);
-        shifterGroup.add(ledGroup);
-
-        group.visible = simState.showTop;
-        group2.visible = simState.showBottom;
-
-        var geometryPcb = new THREE.BoxGeometry( 25, 100, 1 );
-        var materialPcb = new THREE.MeshBasicMaterial( {color: 0x001000} );
-        var mPcb = new THREE.Matrix4();
-        mPcb.makeTranslation(0, -50, 3.5);
-        geometryPcb.applyMatrix(mPcb);
-        var pcb = new THREE.Mesh( geometryPcb, materialPcb );
-        shifterGroup.add( pcb );
-
-
-        var geometryC = new THREE.CylinderGeometry(3.9, 3.9, 2, 4, 1);
-        var ledM = new THREE.Matrix4();
-        ledM.makeRotationX(-Math.PI/2);
-        geometryC.applyMatrix(ledM);
-        ledM.makeRotationZ(-Math.PI/4);
-        geometryC.applyMatrix(ledM);
-        ledM.makeTranslation(0, 0, 2.5);
-        geometryC.applyMatrix(ledM);
-
-        var rLed = 2.1;
-        var geometry = new THREE.CylinderGeometry(rLed, rLed, 2, 16, 1);
-        ledM = new THREE.Matrix4();
-        ledM.makeRotationX(-Math.PI/2);
-        geometry.applyMatrix(ledM);
-        ledM.makeTranslation(0, 0, 1.5);
-        geometry.applyMatrix(ledM);
-
-        var rPovLed = 2.3;
-        var geometryPov  = new THREE.CylinderGeometry(rPovLed, rPovLed, 2, 16, 1);
-        ledM = new THREE.Matrix4();
-        ledM.makeRotationX(-Math.PI/2);
-        geometryPov.applyMatrix(ledM);
-        ledM.makeTranslation(0, 0, -4);
-        geometryPov.applyMatrix(ledM);
-
-        for (var i = 0; i < 16; i++) {
-            var led = new THREE.Object3D();
-            led.translateY(-(5+i*(95/16)));
-            ledGroup.add(led);
-
-            var col = new Colour.HSVColour(360*i/16, 100, 100);
-            //var material = new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
-            var material = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, shading: THREE.FlatShading });
-            //var material = new THREE.MeshBasicMaterial({color: 0});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
-
-            var mesh = new THREE.Mesh(geometry, material);
-
-            var materialC = new THREE.MeshLambertMaterial({ color: 0x000000, shading: THREE.FlatShading });
-            //var material = new THREE.MeshBasicMaterial({color: 0});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
-
-            var meshC = new THREE.Mesh(geometryC, materialC);
-
-            mesh.matrixAutoUpdate = false;
-            led.add(mesh);
-            led.add(meshC);
-            ledMeshes[i] = mesh;
-            leds[i] = led;
-        }
 
         var shakePath = AnimPaths.shakePath;
         var shakeRotZ = AnimPaths.shakeRotZ;
-
-        var axis = new THREE.Vector3(simState.axisX, simState.axisY, simState.axisZ);
-        axis.normalize();
-        var m = new THREE.Matrix4();
-        m.makeRotationAxis(axis, simState.rotSpeed);
-        var t = new THREE.Matrix4();
-        t.makeTranslation(simState.transX, simState.transY, simState.transZ);
-        m.multiply(t);
-
 
 
         //init();
@@ -317,6 +327,7 @@ require([
         }
 
         var shifterBottom;
+        var shifterTop;
 
 
         function init() {
@@ -340,8 +351,9 @@ require([
             var loader = new THREE.STLLoader();
             loader.load("stl/magicshifter_case_104_top.stl", function (geometry) {
                 console.log(geometry);
-                var mat = new THREE.MeshLambertMaterial({color: 0xFFFF00});
-                mat = toonShader;
+                var mat = new THREE.MeshLambertMaterial({color: simState.colorBottom});
+                mat = new THREE.MeshPhongMaterial({color: simState.colorBottom});
+                //mat = toonShader;
                 var stl = new THREE.Mesh(geometry, mat);
                 shifterBottom = stl;
                 //stl.rotateX(Math.PI);
@@ -352,9 +364,11 @@ require([
             var loader = new THREE.STLLoader();
             loader.load("stl/magicshifter_case_104_bottom.stl", function (geometry) {
                 console.log(geometry);
-                var mat = new THREE.MeshLambertMaterial({color: 0xFFFFFF});
-                mat = toonShader;
+                var mat = new THREE.MeshLambertMaterial({color: simState.colorTop});
+                mat = new THREE.MeshPhongMaterial({color: simState.colorTop})
+                //mat = toonShader;
                 var stl = new THREE.Mesh(geometry, mat);
+                shifterTop = stl;
                 //stl.rotateX(Math.PI)
                 group.add(stl);
                 render();
@@ -379,7 +393,7 @@ require([
 
 
 
-            light = new THREE.AmbientLight(0x333333);
+            light = new THREE.AmbientLight(0x000000);
             scene.add(light);
         }
 
@@ -457,10 +471,6 @@ require([
             }
         });
         animLoop.start();
-
-        //document.getElementById("cmdShake").addEventListener("click", CmdShake, false);
-
-
 
         function CmdShake() {
             CmdClear();
