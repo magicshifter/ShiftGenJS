@@ -1,4 +1,88 @@
-define([], function() {
+define(["Underscore"], function(_) {
+    var ResLoader = function() {
+        this.queue = {};
+        this.types = {};
+        this.factories = {
+            "ecfile": function(arraybuffer) { return new ECFile(arraybuffer); },
+        };
+        this.objs = {};
+    };
+
+    ResLoader.prototype.load = function(id, url, type) {
+        this.queue[id] = url;
+        this.types[id] = type;
+        var o = {};
+        this.objs[id] = o;
+        return o;
+    };
+
+    ResLoader.prototype.start = function(useDB, cb) {
+        var item;
+        var data = {};
+        var loaderCtx = this;
+        var itemsToLoad = Object.keys(this.queue).length;
+        var loadedCount = 0;
+
+        var doParsing = function(result, givenType) {
+            if (loaderCtx.factories[givenType])
+                result = loaderCtx.factories[givenType](result);
+            return result;
+        };
+
+        var createBla = function(key) {
+            return function(result) {
+                data[key] = result;
+                loadedCount++;
+                loaderCtx.objs[key].value = result;
+                if (loadedCount == itemsToLoad) {
+                    cb(data);
+                }
+            };
+        };
+        var ctx = this;
+        var iterateAll = function(cachedNames) {
+            _.each(ctx.queue, function(url, key) {
+                var givenType = ctx.types[key];
+                var factory = loaderCtx.factories[givenType];
+                var type = factory ? "arraybuffer" : givenType || "arraybuffer";
+
+                // used cache version if availab
+                if (useDB && _.contains(cachedNames, url))
+                {
+                    FileStore.loadRule(url, function(rule) {
+                        var result = rule.ruleData;
+                        createBla(key)(result);
+                    });
+                }
+                else
+                {
+                    getFromURL(ctx.queue[key], type, function(result) {
+                        result = doParsing(result, givenType);
+
+                        if (useDB)
+                            FileStore.storeRule(url, result);
+
+                        createBla(key)(result);
+                    });
+                }
+            });
+        };
+
+        if (useDB) {
+            var oldIterateAll = iterateAll;
+            iterateAll = function() {
+                FileStore.ready(function() {
+                    FileStore.loadAllRuleNames(function(cachedNames) {
+                        oldIterateAll(cachedNames);
+                    });
+                });
+            };
+        }
+
+        iterateAll();
+    };
+
+
 	function relMouseCoords(event){
 		var totalOffsetX = 0;
 		var totalOffsetY = 0;
@@ -173,6 +257,7 @@ define([], function() {
 	
 
 	return {
+        ResLoader: ResLoader,
 		AnimationLoop : AnimationLoop,
 		FPSMonitor : FPSMonitor,
 

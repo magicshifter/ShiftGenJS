@@ -9,6 +9,7 @@ require.config({
         Stats: "libs/stats.min",
         Colour: "libs/Colour",
         DatGUI: "libs/dat.gui.min",
+        Underscore: "libs/underscore"
     },
     shim: {
         Three: {
@@ -28,6 +29,10 @@ require.config({
 
         Stats: {
             exports: "Stats",
+        },
+
+        Underscore: {
+            exports: "_",
         },
 
         Colour: {
@@ -54,6 +59,65 @@ require([
     function (Utils, AnimPaths, THREE, Detector, dat, Stats, Colour) {
         "use strict";
 
+
+
+        function createShaderMaterial(id, light, vs, fs) {
+
+            // could be a global, defined once, but here for convenience
+            var shaderTypes = {
+                'phongDiffuse' : {
+
+                    uniforms: {
+
+                        "uDirLightPos":	{ type: "v3", value: new THREE.Vector3() },
+                        "uDirLightColor": { type: "c", value: new THREE.Color( 0xFFFFFF ) },
+
+                        "uMaterialColor": { type: "c", value: new THREE.Color( 0xFFFFFF ) },
+
+                        uKd: {
+                            type: "f",
+                            value: 0.7
+                        },
+                        uBorder: {
+                            type: "f",
+                            value: 0.4
+                        }
+                    }
+                }
+            };
+
+            var shader = shaderTypes[id];
+
+            var u = THREE.UniformsUtils.clone(shader.uniforms);
+
+            // this line will load a shader that has an id of "vertex" from the .html file
+            //var vs = loadShader("vertex");
+            // this line will load a shader that has an id of "fragment" from the .html file
+            //var fs = loadShader("fragment");
+            var material = new THREE.ShaderMaterial({ uniforms: u, vertexShader: vs, fragmentShader: fs });
+
+            material.uniforms.uDirLightPos.value = light.position;
+            material.uniforms.uDirLightColor.value = light.color;
+
+            return material;
+
+        }
+
+        var loader = new Utils.ResLoader();
+        loader.load("vertexShader", "shader/vertex.glsl", "text");
+        loader.load("fragmentShader", "shader/fragment.glsl", "text");
+        loader.start(false, setupFn);
+
+        var toonShader;
+        var light = new THREE.DirectionalLight(0xffffff);
+        light.position.set(1, 1, -1);
+
+        function setupFn(data) {
+
+            toonShader = createShaderMaterial("phongDiffuse", light, data.vertexShader, data.fragmentShader);
+            //shifterBottom.material = toonShader;
+            init();
+        }
 
         var simState = {
             ms: 1,
@@ -242,7 +306,7 @@ require([
 
 
 
-        init();
+        //init();
         render();
 
         function animate() {
@@ -251,6 +315,8 @@ require([
             controls.update();
 
         }
+
+        var shifterBottom;
 
 
         function init() {
@@ -275,7 +341,9 @@ require([
             loader.load("stl/magicshifter_case_104_top.stl", function (geometry) {
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: 0xFFFF00});
+                mat = toonShader;
                 var stl = new THREE.Mesh(geometry, mat);
+                shifterBottom = stl;
                 //stl.rotateX(Math.PI);
                 group2.add(stl);
                 render();
@@ -285,6 +353,7 @@ require([
             loader.load("stl/magicshifter_case_104_bottom.stl", function (geometry) {
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: 0xFFFFFF});
+                mat = toonShader;
                 var stl = new THREE.Mesh(geometry, mat);
                 //stl.rotateX(Math.PI)
                 group.add(stl);
