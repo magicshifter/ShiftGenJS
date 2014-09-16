@@ -104,6 +104,8 @@ require([
             resize(window.innerWidth, window.innerHeight);
         }
 
+        var scene = new THREE.Scene();
+
         var camera, controls, scene;
         var group = new THREE.Object3D();
         var group2 = new THREE.Object3D();
@@ -225,9 +227,11 @@ require([
         var loader = new Utils.ResLoader();
         loader.load("vertexShader", "shader/vertex.glsl", "text");
         loader.load("fragmentShader", "shader/fragment.glsl", "text");
+        loader.load("glowV", "shader/glowV.glsl", "text");
+        loader.load("glowF", "shader/glowF.glsl", "text");
         loader.start(false, setupFn);
 
-        var toonShader;
+        var toonShader, glowShader;
         var light = new THREE.DirectionalLight(0xffffff);
         light.position.set(1, 1, -1);
 
@@ -235,7 +239,32 @@ require([
 
             toonShader = createShaderMaterial("phongDiffuse", light, data.vertexShader, data.fragmentShader);
             //shifterBottom.material = toonShader;
+
             init();
+            var sphereGeom = new THREE.SphereGeometry(100, 32, 16);
+            // create custom material from the shader code above
+            //   that is within specially labeled script tags
+            var customMaterial = new THREE.ShaderMaterial(
+                {
+                    uniforms:
+                    {
+                        "c":   { type: "f", value: 0.1 },
+                        "p":   { type: "f", value: 3.0 },
+                        glowColor: { type: "c", value: new THREE.Color(0xffff00) },
+                        viewVector: { type: "v3", value: new THREE.Vector3(0, 1, 0) },
+                    },
+                    vertexShader:   data.glowV,
+                    fragmentShader: data.glowF,
+                    side: THREE.FrontSide,
+                    blending: THREE.AdditiveBlending,
+                    transparent: true
+                }   );
+
+            glowShader = customMaterial;
+            var moonGlow = new THREE.Mesh( sphereGeom.clone(), customMaterial );
+            //scene.add( moonGlow );
+
+            render();
         }
 
         var gui = new dat.GUI();
@@ -317,7 +346,7 @@ require([
 
 
         //init();
-        render();
+
 
         function animate() {
 
@@ -340,7 +369,6 @@ require([
             controls.damping = 0.2;
             controls.addEventListener('change', render);
 
-            scene = new THREE.Scene();
             scene.add(shifterGroup);
             scene.add(povGroup);
             scene.fog = null; // new THREE.FogExp2(0x000000, 0.002);
@@ -398,6 +426,10 @@ require([
         }
 
         function render() {
+            if (glowShader) {
+                glowShader.uniforms.viewVector.value = camera.position.clone();
+            }
+
             renderer.render(scene, camera);
             //stats.update();
         }
@@ -451,6 +483,7 @@ require([
                             ledMesh.material = new THREE.MeshBasicMaterial({color: mC});;
                             var material = new THREE.MeshBasicMaterial({color: mC});//new THREE.MeshLambertMaterial({ color: col.getCSSHexadecimalRGB(), shading: THREE.FlatShading });
                             //material.color = new THREE.Color(col.getCSSIntegerRGBA());
+                            //material = glowShader;
                             var mesh = new THREE.Mesh(geometryPov, material);
                             mesh.matrix = led.matrixWorld.clone();
                             mesh.matrixAutoUpdate = false;
