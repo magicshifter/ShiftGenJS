@@ -3,8 +3,10 @@
  *
  * About
  *
- *     You can use web2serial.js to write web apps that upload data to a serial device.
+ *     You can use web2serial.js to write web apps that exchange data with serial devices.
  *     web2serial.js requires jQuery (tested with jquery-2.1.1). 
+ *
+ *     You can exchange strings, bytes, arraybuffers, etc.
  *
  *     For an usage example see demo.js (live at http://metalab.github.io/web2serial)
  *
@@ -37,7 +39,7 @@
  *     Web2SerialSocket
  *
  *         // methods
- *         socket.send(data) .. send data as bytes to the serial device
+ *         socket.send(data) .. send data [string, bytes, arraybuffer, ...] to the serial device
  *         socket.close() ..... close the connection
  *
  *         // event listeners
@@ -49,7 +51,6 @@
 
 // Cache of found serial devices
 var devices;
-var localHostUrlPart = "localhost:54321";
 
 // A Device represents an attached serial device on the client
 var Device = function(hash, device, desc, hwinfo) {
@@ -86,7 +87,7 @@ var Web2SerialSocket = function(device_hash, baudrate) {
     // internals
     this.baudrate = baudrate;
     this.device = web2serial.device_by_hash(device_hash);
-    this.url = "ws://" + localHostUrlPart + "/device/" + this.device.hash + "/baudrate/" + baudrate;
+    this.url = "ws://localhost:54321/device/" + this.device.hash + "/baudrate/" + baudrate;
     this.socket = new WebSocket(this.url);
 
     // make `this` accessible for inner class methods
@@ -131,7 +132,7 @@ var Web2SerialSocket = function(device_hash, baudrate) {
 var web2serial = {
     is_alive: function(callback) {
         // returns whether daemon is running on this client computer
-        $.get("http://" + localHostUrlPart + "/ping", function( data ) {
+        $.get("http://localhost:54321/ping", function( data ) {
             callback(true);
         }).error(function(e) { 
             console.log(e); 
@@ -140,7 +141,7 @@ var web2serial = {
     },
 
     get_devices: function(callback) {
-        $.get("http://" + localHostUrlPart + "/devices", function( data ) {
+        $.get("http://localhost:54321/devices", function( data ) {
             console.log(data);
             devices = new Array();
             var _devices = JSON.parse(data);

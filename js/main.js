@@ -593,9 +593,11 @@ require([
 
                             (function(hash) {
                                 var url = "magicBitmaps/bitmaps_cree/04_oneup.magicBitmap";
+                                url = "magicBitmaps/bitmaps_cree/17_nyancat.magicBitmap";
                                 //url = "magicBitmaps/ping.txt";
+                                //url = "magicBitmaps/bitmaps_cree/empty";
                                 AsyncLoad(url, function (ab) {
-                                    UploadToShifter(hash, ab);
+                                    UploadToShifter(hash, 1, ab);
                                 });
                             })(device_list[i].hash);
                         }
@@ -606,8 +608,14 @@ require([
             });
         }
 
-        function UploadToShifter(device_hash, arraybuffer) {
+        function UploadToShifter(device_hash, sector, arraybuffer) {
+
             console.log(JSON.stringify({ "msg": ab2str(arraybuffer) }));
+
+            var subarray = arraybuffer.slice(0, 10);
+
+
+            console.log( JSON.stringify({ "msg": ab2str(subarray) }));
 
 
             var socket = web2serial.open_connection(device_hash, 9600);
@@ -629,43 +637,41 @@ require([
                 console.log("<div class='alert alert-info' role='alert'>closed: " + this.device.str + "</div>");
             };
 
-            /*
-             byte[] header = {
-             (byte)sector,
-             (byte)(stream.Length >> 8),
-             (byte)(stream.Length %256)
-             };
-             byte[] data;
-             using (MemoryStream mstream = new MemoryStream()) {
-             stream.CopyTo(mstream);
-             data = mstream.ToArray();
-             }
-            port.Write("MAGIC_UPLOAD");
-             Thread.Sleep(100);
-             port.Write(header, 0, header.Length);
-             Thread.Sleep(1500);
-             WriteInBlocks(data, 32, 3);
-
-
-             */
-
-
 //            /*
             var s = new TimeScedule();
             s.add(function() {
                 socket.send("MAGIC_UPLOAD");
             }, 500);
             s.add(function() {
-                socket.send("\x01");
-                socket.send(0xFF &(arraybuffer.length >> 8));
-                socket.send(0xFF & arraybuffer.length);
-            }, 1500)
+                socket.send(String.fromCharCode(sector));
+                socket.send(String.fromCharCode(0xFF &(arraybuffer.byteLength >> 8)));
+                socket.send(String.fromCharCode(0xFF & arraybuffer.byteLength));
+            }, 100);
+
             s.add(function() {
-                socket.send(ab2str(arraybuffer));
+
             }, 1500);
+
+            var delay = 3;
+            var stepSize = 32;
+            for (var idx = 0; idx < arraybuffer.byteLength; idx += stepSize) {
+                (function() {
+                    var subarray = arraybuffer.slice(idx, idx+stepSize);
+                    var typed = new Uint8Array(subarray);
+                    var text = ab2str(subarray);
+                    console.log("sendin: " + text)
+                    s.add(function () {
+                        socket.send(text);
+                    }, delay);
+                })();
+            }
+
             s.add(function() {
-                socket.close();
-            }, 2000);
+                }, 100);
+
+            s.add(function() {
+                socket.close(1000);
+            }, 200);
             s.run();
 //*/
 /*
@@ -722,9 +728,4 @@ require([
             }
             return buf;
         }
-
-
-
-
-
     });
