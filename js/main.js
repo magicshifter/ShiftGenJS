@@ -11,11 +11,17 @@ require.config({
         DatGUI: "libs/dat.gui.min",
         Underscore: "libs/underscore",
         web2serial: "libs/web2serial",
+        "jquery": "libs/jquery-2.1.1.min"
     },
     shim: {
+        jquery: {
+            exports: "$",
+        },
         web2serial: {
+          deps: ["jquery"],
           exports: "web2serial",
         },
+
         Three: {
             exports: "THREE",
         },
@@ -573,7 +579,7 @@ require([
             }
         }
 // web2serial test
-        document.getElementById("cmdTestSerial").addEventListener("click", TestSerial, false);
+        //document.getElementById("cmdTestSerial").addEventListener("click", TestSerial, false);
 
         function TestSerial() {
             // Check whether web2serial-core is running
@@ -583,13 +589,120 @@ require([
                     web2serial.get_devices(function(device_list) {
                         //$("#devices-list").html("");
                         for (var i=0; i<device_list.length; i++) {
-                            alert("<div class='device'><button type='button' id='device-" + device_list[i].hash + "' class='btn btn-default' onclick=\"connect('" + device_list[i].hash + "')\" title='click to connect'>" + device_list[i].device + " (" + device_list[i].desc + ", " + device_list[i].hwinfo + ")</button></div>");
+                            //alert("<div class='device'><button type='button' id='device-" + device_list[i].hash + "' class='btn btn-default' onclick=\"connect('" + device_list[i].hash + "')\" title='click to connect'>" + device_list[i].device + " (" + device_list[i].desc + ", " + device_list[i].hwinfo + ")</button></div>");
+
+                            (function(hash) {
+                                var url = "magicBitmaps/bitmaps_cree/04_oneup.magicBitmap";
+                                url = "magicBitmaps/ping.txt";
+                                AsyncLoad(url, function (ab) {
+                                    UploadToShifter(hash, ab);
+                                });
+                            })(device_list[i].hash);
                         }
                     });
                 } else {
-                    $("#alert-not-running").show();
+                    alert("why u no web2serial? :("); //$("#alert-not-running").show();
                 }
             });
+        }
+
+        function UploadToShifter(device_hash, arraybuffer) {
+            var int8View = new Int8Array(arraybuffer);
+            console.log(int8View[0].toString(16));
+            console.log(int8View[1].toString(16));
+            console.log(int8View[2].toString(16));
+            alert( JSON.stringify({ "msg": ab2str(arraybuffer) }));
+
+
+            var socket = web2serial.open_connection(device_hash, 9600);
+
+            // Set handlers
+            socket.onmessage = function(data) {
+                console.log(data);
+            };
+            socket.onopen = function(event) {
+                console.log("<div class='alert alert-success' role='alert'>opened: " + this.device.str + ", " + this.baudrate + " baud</div>");
+            };
+            socket.onerror = function(event) {
+                // Error handling
+                event = event ? event : "noevent :(";
+                console.log("<div class='alert alert-danger' role='alert'>error: " + JSON.stringify(event) + "</div>");
+            };
+            socket.onclose = function(event) {
+                // Connection closed
+                console.log("<div class='alert alert-info' role='alert'>closed: " + this.device.str + "</div>");
+            };
+
+            /*
+             byte[] header = {
+             (byte)sector,
+             (byte)(stream.Length >> 8),
+             (byte)(stream.Length %256)
+             };
+             byte[] data;
+             using (MemoryStream mstream = new MemoryStream()) {
+             stream.CopyTo(mstream);
+             data = mstream.ToArray();
+             }
+            port.Write("MAGIC_UPLOAD");
+             Thread.Sleep(100);
+             port.Write(header, 0, header.Length);
+             Thread.Sleep(1500);
+             WriteInBlocks(data, 32, 3);
+
+
+             */
+
+         //   socket.send("\x00")
+            var s = new TimeScedule();
+            s.add(function() {
+                socket.send("MAGIC_PING\n");
+            }, 500);
+            s.add(function() {
+                socket.close(1000);
+            }, 500);
+            s.run();
+        }
+
+        function TimeScedule() {
+            this.queue = [];
+
+            this.add = function(cb, delay) {
+                this.queue.push({cb:cb, delay:delay});
+            }
+
+            this.run = function() {
+                var q = this.queue.reverse();
+                var recursiveFunction = function() {}
+                if (q.length > 0) {
+                    var item = q.pop();
+                    setTimeout(function() {
+                        item.cb();
+                        recursiveFunction();
+                    }, item.delay);
+                }
+            }
+        }
+
+        function AsyncLoad(url, cb) {
+            var loader = new Utils.ResLoader();
+            loader.load("data", url, "arraybuffer");
+            loader.start(false, function(data) {
+                cb(data.data)
+            });
+        }
+
+        function ab2str(buf) {
+            return String.fromCharCode.apply(null, new Uint8Array(buf));
+        }
+
+        function str2ab(str) {
+            var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
+            var bufView = new Uint16Array(buf);
+            for (var i=0, strLen=str.length; i<strLen; i++) {
+                bufView[i] = str.charCodeAt(i);
+            }
+            return buf;
         }
 
 
