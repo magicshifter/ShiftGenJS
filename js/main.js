@@ -593,7 +593,7 @@ require([
 
                             (function(hash) {
                                 var url = "magicBitmaps/bitmaps_cree/04_oneup.magicBitmap";
-                                url = "magicBitmaps/ping.txt";
+                                //url = "magicBitmaps/ping.txt";
                                 AsyncLoad(url, function (ab) {
                                     UploadToShifter(hash, ab);
                                 });
@@ -607,11 +607,7 @@ require([
         }
 
         function UploadToShifter(device_hash, arraybuffer) {
-            var int8View = new Int8Array(arraybuffer);
-            console.log(int8View[0].toString(16));
-            console.log(int8View[1].toString(16));
-            console.log(int8View[2].toString(16));
-            alert( JSON.stringify({ "msg": ab2str(arraybuffer) }));
+            console.log(JSON.stringify({ "msg": ab2str(arraybuffer) }));
 
 
             var socket = web2serial.open_connection(device_hash, 9600);
@@ -653,7 +649,26 @@ require([
 
              */
 
-         //   socket.send("\x00")
+
+//            /*
+            var s = new TimeScedule();
+            s.add(function() {
+                socket.send("MAGIC_UPLOAD");
+            }, 500);
+            s.add(function() {
+                socket.send("\x01");
+                socket.send(0xFF &(arraybuffer.length >> 8));
+                socket.send(0xFF & arraybuffer.length);
+            }, 1500)
+            s.add(function() {
+                socket.send(ab2str(arraybuffer));
+            }, 1500);
+            s.add(function() {
+                socket.close();
+            }, 2000);
+            s.run();
+//*/
+/*
             var s = new TimeScedule();
             s.add(function() {
                 socket.send("MAGIC_PING\n");
@@ -662,25 +677,28 @@ require([
                 socket.close(1000);
             }, 500);
             s.run();
+  //          */
         }
 
         function TimeScedule() {
             this.queue = [];
 
             this.add = function(cb, delay) {
-                this.queue.push({cb:cb, delay:delay});
+                this.queue[this.queue.length] = ({cb:cb, delay:delay});
             }
 
             this.run = function() {
                 var q = this.queue.reverse();
-                var recursiveFunction = function() {}
-                if (q.length > 0) {
-                    var item = q.pop();
-                    setTimeout(function() {
-                        item.cb();
-                        recursiveFunction();
-                    }, item.delay);
-                }
+                var recursiveFunction = function() {
+                    if (q.length > 0) {
+                        var item = q.pop();
+                        setTimeout(function () {
+                            item.cb();
+                            recursiveFunction();
+                        }, item.delay);
+                    }
+                };
+                recursiveFunction();
             }
         }
 
