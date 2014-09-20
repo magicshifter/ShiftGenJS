@@ -9,9 +9,13 @@ require.config({
         Stats: "libs/stats.min",
         Colour: "libs/Colour",
         DatGUI: "libs/dat.gui.min",
-        Underscore: "libs/underscore"
+        Underscore: "libs/underscore",
+        web2serial: "libs/web2serial",
     },
     shim: {
+        web2serial: {
+          exports: "web2serial",
+        },
         Three: {
             exports: "THREE",
         },
@@ -55,8 +59,8 @@ require.config({
 
 
 require([
-        "Utils", "AnimPaths", "Three", "Detector", "DatGUI", "Stats", "Colour", "OrbitControls", "STLLoader"],
-    function (Utils, AnimPaths, THREE, Detector, dat, Stats, Colour) {
+        "Utils", "AnimPaths", "Three", "Detector", "DatGUI", "Stats", "Colour", "web2serial", "OrbitControls", "STLLoader"],
+    function (Utils, AnimPaths, THREE, Detector, dat, Stats, Colour, web2serial) {
         "use strict";
 
         var simState = {
@@ -68,6 +72,9 @@ require([
 
             colorTop: "#222222",
             colorBottom: "#222222",
+
+            c: 0.5,
+            p: 1.0,
 
             renderWidth: 2800,
             renderHeight: 1575,
@@ -131,6 +138,7 @@ require([
 
 
         var geometryC = new THREE.CylinderGeometry(3.9, 3.9, 2, 4, 1);
+        //geometryC = new THREE.SphereGeometry(3, 32, 16);
         var ledM = new THREE.Matrix4();
         ledM.makeRotationX(-Math.PI/2);
         geometryC.applyMatrix(ledM);
@@ -149,6 +157,7 @@ require([
 
         var rPovLed = 2.3;
         var geometryPov  = new THREE.CylinderGeometry(rPovLed, rPovLed, 2, 16, 1);
+        //geometryPov = new THREE.SphereGeometry(rPovLed, 32, 16);
         ledM = new THREE.Matrix4();
         ledM.makeRotationX(-Math.PI/2);
         geometryPov.applyMatrix(ledM);
@@ -284,6 +293,10 @@ require([
                 if (shifterBottom) {
                     shifterBottom.material.color = new THREE.Color(simState.colorBottom);
                 }
+                if (glowShader) {
+                    glowShader.uniforms.c.value = simState.c;
+                    glowShader.uniforms.p.value = simState.p;
+                }
                 render();
             });
         }
@@ -297,6 +310,8 @@ require([
         SetupOnChange(gui.addColor(simState, 'colorBottom'));
         SetupOnChange(gui.add(simState, 'renderWidth'));
         SetupOnChange(gui.add(simState, 'renderHeight'));
+        SetupOnChange(gui.add(simState, 'c', 0, 10));
+        SetupOnChange(gui.add(simState, 'p', 0, 10));
         gui.add(simState, 'render');
         gui.add(simState, 'shake');
         gui.add(simState, 'clear');
@@ -552,10 +567,33 @@ require([
                     break;
 
                 case 0x42: // B
-                    CmdRender();
+                    TestSerial();
                     break;
 
             }
         }
+// web2serial test
+        document.getElementById("cmdTestSerial").addEventListener("click", TestSerial, false);
+
+        function TestSerial() {
+            // Check whether web2serial-core is running
+            web2serial.is_alive(function(is_alive) {
+                if (is_alive) {
+                    //$("#alert-running").show();
+                    web2serial.get_devices(function(device_list) {
+                        //$("#devices-list").html("");
+                        for (var i=0; i<device_list.length; i++) {
+                            alert("<div class='device'><button type='button' id='device-" + device_list[i].hash + "' class='btn btn-default' onclick=\"connect('" + device_list[i].hash + "')\" title='click to connect'>" + device_list[i].device + " (" + device_list[i].desc + ", " + device_list[i].hwinfo + ")</button></div>");
+                        }
+                    });
+                } else {
+                    $("#alert-not-running").show();
+                }
+            });
+        }
+
+
+
+
 
     });
