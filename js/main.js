@@ -99,11 +99,13 @@ require([
 
         // renderer
         if (!Detector.webgl) Detector.addGetWebGLMessage();
-        var renderer = new THREE.WebGLRenderer({ antialias: false });
+        var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true});
         renderer.setSize(window.innerWidth, window.innerHeight);
 
         var container = document.getElementById('container');
-        container.appendChild(renderer.domElement);
+        var domElement = renderer.domElement;
+        //domElement.style.backgroundColor = "red";
+        container.appendChild(domElement);
 
 
         //var stats = new Stats();
@@ -393,7 +395,7 @@ require([
             scene.add(shifterGroup);
             scene.add(povGroup);
             scene.fog = null; // new THREE.FogExp2(0x000000, 0.002);
-            renderer.setClearColor(0x000000, 1);
+            renderer.setClearColor(0x000000, 0);
 
 
             // load STLs async
