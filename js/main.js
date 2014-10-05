@@ -404,6 +404,7 @@ require([
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: simState.colorBottom});
                 mat = new THREE.MeshPhongMaterial({color: simState.colorBottom});
+                mat = new THREE.MeshBasicMaterial({color: simState.colorBottom});
                 //mat = toonShader;
                 var stl = new THREE.Mesh(geometry, mat);
                 shifterBottom = stl;
@@ -416,7 +417,8 @@ require([
             loader.load("stl/magicshifter_case_104_bottom.stl", function (geometry) {
                 console.log(geometry);
                 var mat = new THREE.MeshLambertMaterial({color: simState.colorTop});
-                mat = new THREE.MeshPhongMaterial({color: simState.colorTop})
+                mat = new THREE.MeshPhongMaterial({color: simState.colorTop});
+                mat = new THREE.MeshBasicMaterial({color: simState.colorTop});
                 //mat = toonShader;
                 var stl = new THREE.Mesh(geometry, mat);
                 shifterTop = stl;
