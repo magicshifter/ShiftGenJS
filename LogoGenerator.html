@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Magicshifter Logo Generator</title>
+		<style>
+			body {
+			background: #FFF;
+			}
+		</style>
+		<script type="text/javascript" src="js/libs/snap.svg-min.js"></script>
+        <script type="text/javascript" src="js/libs/dat.gui.min.js"></script>
+        <script type="text/javascript" src="js/libs/three/three.js"></script>
+        <script type="text/javascript" src="js/libs/Colour.js"></script>
+        <script type="text/javascript" src="js/libs/FileSaver.js"></script>
+
+        <style>
+            .multiply { mix-blend-mode: multiply; }
+        </style>
+    </head>
+	<body>
+
+    <div style="position: fixed; top: 0px; left: 0px;">
+        <input type="file" id="filePicture" accept="image/*">
+        <canvas id="canvasActiveBitmap" height="16"></canvas>
+    </div>
+    <div style="position: fixed; bottom: 0px; left: 0px;">
+        <textarea id="svgSource" style="width: 400px; height: 50px;"></textarea>
+    </div>
+
+    <script>
+        window.addEventListener("load", function() {
+            var imgData;
+            var width = window.innerWidth;
+            var height = window.innerHeight;
+            var s = Snap(width, height);
+
+            var simState = {
+                steps: 50,
+                startStep: 0,
+                ledRadius: 2,
+
+                axisX: 0.1,
+                axisY: 0.9,
+                axisZ: 0.11,
+
+                startX: -100,
+                startY: 0,
+                startZ: 200,
+
+                shifterDirX: 0,
+                shifterDirY: 10,
+                shifterDirZ: 0,
+
+                transX: 0.01,
+                transY: -4.01,
+                transZ: 0.01,
+
+                rotSpeed: 0.035,
+
+                preview: false,
+                save: function () {
+                    if (simState.preview) {
+                        simState.preview = false;
+                        refreshGui();
+                        DoSim();
+                    }
+                    var svgText = s.outerSVG();
+                    var svgBlob = new Blob([svgText], {type: "image/svg+xml"});
+                    saveAs(svgBlob, "export.svg");
+                    document.getElementById("svgSource").value = svgText;
+                }
+            };
+
+            var gui = new dat.GUI();
+
+            function refreshGui() {
+                for (var i in gui.__controllers) {
+                    gui.__controllers[i].updateDisplay();
+                }
+            }
+
+            function SetupOnChange(controller) {
+                controller.onChange(function (value) {
+                    // Fires on every change, drag, keypress, etc.
+                    DoSim();
+                });
+
+//                controller.onFinishChange(function(value) {
+//                    // Fires when a controller loses focus.
+//                    alert("The new value is " + value);
+//                });
+            }
+
+
+            SetupOnChange(gui.add(simState, 'steps', 1, 350));
+            SetupOnChange(gui.add(simState, 'startStep', 0, 249));
+
+            SetupOnChange(gui.add(simState, 'ledRadius', 1, 10));
+
+            SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.1));
+
+            SetupOnChange(gui.add(simState, 'axisX', -1, 1));
+            SetupOnChange(gui.add(simState, 'axisY', -1, 1));
+            SetupOnChange(gui.add(simState, 'axisZ', -1, 1));
+
+            SetupOnChange(gui.add(simState, 'startX', -500, 500));
+            SetupOnChange(gui.add(simState, 'startY', -500, 500));
+            SetupOnChange(gui.add(simState, 'startZ', -500, 500));
+
+            SetupOnChange(gui.add(simState, 'shifterDirX', -10, 10));
+            SetupOnChange(gui.add(simState, 'shifterDirY', -10, 10));
+            SetupOnChange(gui.add(simState, 'shifterDirZ', -10, 10));
+
+            SetupOnChange(gui.add(simState, 'transX', -10, 10));
+            SetupOnChange(gui.add(simState, 'transY', -10, 10));
+            SetupOnChange(gui.add(simState, 'transZ', -10, 10));
+
+            SetupOnChange(gui.add(simState, 'preview'));
+
+            gui.add(simState, 'save');
+
+            // initial run
+            DoSim();
+
+            function DoSim() {
+                s.clear();
+
+                var ledCirc = s.circle(200, 200, 100);
+                ledCirc.attr({
+                    fill: "#F0F",
+                    stroke: "#000",
+                    strokeWidth: 0
+                });
+
+                var ledCirc = s.circle(320, 200, 100);
+                ledCirc.attr({
+                    fill: "#FF0",
+                    stroke: "#000",
+                    strokeWidth: 0
+                });
+
+                function add(a, b) {
+                    return [a[0] + b[0], a[1]+b[1]];
+                }
+
+                function sub(a, b) {
+                    return [a[0] - b[0], a[1]-b[1]];
+                }
+
+                function mul(a, s) {
+                    return [a[0]*s, a[1]*s];
+                }
+
+                function len(a) {
+                    Math.sqrt(a[0]*a[0], a[1]*a[1]);
+                }
+
+                function point2path(point) {
+                    return point[0] + " " + point[1];
+                }
+
+                function move(point, abs) {
+                    var prefix = abs ? "M" : "m";
+                    return prefix+point2path(point) + " ";
+                }
+
+                function line(point, abs) {
+                    var prefix = abs ? "L" : "l";
+                    return prefix+point2path(point) + " ";
+                }
+
+
+                var whiteSize = [100, 20];
+
+                var repos = [300, 200];
+
+                var whiteW=100, whiteH=20;
+                var whiteObj = [[0,0], [whiteW, 0], [whiteW, whiteH], [0, whiteH]];
+
+                var lightPos = [-100, -50];
+                var shadowScale = 2;
+
+                lightPos = add(lightPos, repos);
+
+                var shadowPoints = [];
+                for (var i in whiteObj) {
+                    var point = whiteObj[i];
+                    point = add(repos, point);
+
+                    var dir = sub(point, lightPos);
+
+                    console.log(dir);
+
+                    var scaledDir = mul(dir, shadowScale);
+                    console.log(scaledDir);
+
+                    var shadowPoint = add(lightPos, scaledDir);
+ 
+
+                    var path = s.path(move(lightPos, true)+line(shadowPoint, true));
+                    path.attr({
+                        stroke: "#AAA",
+                        strokeWidth: 1
+                    });
+                }
+
+                var path = s.path("M200,50 a35 35 0 0 1 100 0 l0 70 a40 40 0 0 1 -100 0 z");
+                path.attr({
+                    fill: "#999",
+                    stroke: "#000",
+                    strokeWidth: 5,
+                    class: "multiply"
+                });
+
+
+                var path = s.path("M400,100 m200,200");
+                path.attr({
+                    fill: "#999",
+                    stroke: "#000",
+                    strokeWidth: 5,
+                    class: "multiply"
+                });
+
+                var svgText = s.outerSVG();
+                document.getElementById("svgSource").value = svgText;
+            }
+        });
+		</script>
+	</body>
+</html>
