@@ -153,7 +153,7 @@
                 }
 
                 function len(a) {
-                    Math.sqrt(a[0]*a[0], a[1]*a[1]);
+                    return Math.sqrt(a[0]*a[0] * a[1]*a[1]);
                 }
 
                 function point2path(point) {
@@ -181,22 +181,23 @@
                 var lightPos = [-100, -50];
                 var shadowScale = 2;
 
+                // reposition
+                for (var i in whiteObj) {
+                    var o = whiteObj[i];
+                    whiteObj[i] = add(o, repos);
+                }
                 lightPos = add(lightPos, repos);
 
                 var shadowPoints = [];
+
                 for (var i in whiteObj) {
                     var point = whiteObj[i];
-                    point = add(repos, point);
-
                     var dir = sub(point, lightPos);
-
-                    console.log(dir);
+                    var dirLen = len(dir);
 
                     var scaledDir = mul(dir, shadowScale);
-                    console.log(scaledDir);
-
                     var shadowPoint = add(lightPos, scaledDir);
- 
+                    shadowPoints[i] = {point: shadowPoint, len: dirLen, i: i};
 
                     var path = s.path(move(lightPos, true)+line(shadowPoint, true));
                     path.attr({
@@ -204,6 +205,29 @@
                         strokeWidth: 1
                     });
                 }
+
+                shadowPoints.sort(function(a, b) {return b.len - a.len});
+
+                var iMax = shadowPoints[0].i;
+                var i2 = shadowPoints[1].i;
+                var i3 = shadowPoints[2].i;
+
+                var path = s.path(
+                    move(whiteObj[i3], true) +
+                    line(whiteObj[iMax], true) +
+                    line(whiteObj[i2], true) +
+                            line(shadowPoints[1].point, true) +
+                            line(shadowPoints[0].point, true) +
+                            line(shadowPoints[2].point, true) +
+                            "z"
+                );
+                path.attr({
+                    stroke: "#000",
+                    strokeWidth: 2,
+                    fill: "#F00"
+                });
+
+
 
                 var path = s.path("M200,50 a35 35 0 0 1 100 0 l0 70 a40 40 0 0 1 -100 0 z");
                 path.attr({
