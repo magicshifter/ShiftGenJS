@@ -126,19 +126,7 @@
             function DoSim() {
                 s.clear();
 
-                var ledCirc = s.circle(200, 200, 100);
-                ledCirc.attr({
-                    fill: "#F0F",
-                    stroke: "#000",
-                    strokeWidth: 0
-                });
 
-                var ledCirc = s.circle(320, 200, 100);
-                ledCirc.attr({
-                    fill: "#FF0",
-                    stroke: "#000",
-                    strokeWidth: 0
-                });
 
                 function add(a, b) {
                     return [a[0] + b[0], a[1]+b[1]];
@@ -178,8 +166,8 @@
                 var whiteW=100, whiteH=20;
                 var whiteObj = [[0,0], [whiteW, 0], [whiteW, whiteH], [0, whiteH]];
 
-                var lightPos = [-100, -50];
-                var shadowScale = 2;
+                var lightPos = [-40, -85];
+                var shadowScale = 1.6;
 
                 // reposition
                 for (var i in whiteObj) {
@@ -188,63 +176,64 @@
                 }
                 lightPos = add(lightPos, repos);
 
-                var shadowPoints = [];
+                var lightMove = [10,0];
+                colors = ["#F70", "#F0F", "#0FF", "#FF0"];
+                var offset = [0, 0];
+                var offsetDelta = [0, 5];
 
-                for (var i in whiteObj) {
-                    var point = whiteObj[i];
-                    var dir = sub(point, lightPos);
-                    var dirLen = len(dir);
+                for (var i in colors) {
+                    var color = colors[i];
+                    drawShadow(whiteObj, lightPos, 2, offset, color, false);
 
-                    var scaledDir = mul(dir, shadowScale);
-                    var shadowPoint = add(lightPos, scaledDir);
-                    shadowPoints[i] = {point: shadowPoint, len: dirLen, i: i};
-
-                    var path = s.path(move(lightPos, true)+line(shadowPoint, true));
-                    path.attr({
-                        stroke: "#AAA",
-                        strokeWidth: 1
-                    });
+                    lightPos = add(lightPos, lightMove);
+                    offset = add(offset, offsetDelta);
                 }
 
-                shadowPoints.sort(function(a, b) {return b.len - a.len});
+                function drawShadow(whiteObj, lightPos, shadowScale, offset, color, drawHelp) {
+                    var shadowPoints = [];
 
-                var iMax = shadowPoints[0].i;
-                var i2 = shadowPoints[1].i;
-                var i3 = shadowPoints[2].i;
+                    for (var i in whiteObj) {
+                        var point = whiteObj[i];
+                        var dir = sub(point, lightPos);
+                        var dirLen = len(dir);
 
-                var path = s.path(
-                    move(whiteObj[i3], true) +
-                    line(whiteObj[iMax], true) +
-                    line(whiteObj[i2], true) +
-                            line(shadowPoints[1].point, true) +
-                            line(shadowPoints[0].point, true) +
-                            line(shadowPoints[2].point, true) +
-                            "z"
-                );
-                path.attr({
-                    stroke: "#000",
-                    strokeWidth: 2,
-                    fill: "#F00"
-                });
+                        var scaledDir = mul(dir, shadowScale);
+                        var shadowPoint = add(lightPos, scaledDir);
+                        shadowPoints[i] = {point: shadowPoint, len: dirLen, i: i};
 
+                        if (drawHelp) {
+                            var path = s.path(move(lightPos, true) + line(shadowPoint, true));
+                            path.attr({
+                                stroke: "#AAA",
+                                strokeWidth: 1
+                            });
+                        }
+                    }
 
+                    shadowPoints.sort(function (a, b) {
+                        return b.len - a.len
+                    });
 
-                var path = s.path("M200,50 a35 35 0 0 1 100 0 l0 70 a40 40 0 0 1 -100 0 z");
-                path.attr({
-                    fill: "#999",
-                    stroke: "#000",
-                    strokeWidth: 5,
-                    class: "multiply"
-                });
+                    var iMax = shadowPoints[0].i;
+                    var i2 = shadowPoints[1].i;
+                    var i3 = shadowPoints[2].i;
 
-
-                var path = s.path("M400,100 m200,200");
-                path.attr({
-                    fill: "#999",
-                    stroke: "#000",
-                    strokeWidth: 5,
-                    class: "multiply"
-                });
+                    var path = s.path(
+                                    move(whiteObj[i3], true) +
+                                    line(whiteObj[iMax], true) +
+                                    line(whiteObj[i2], true) +
+                                    line(add(shadowPoints[1].point, offset), true) +
+                                    line(add(shadowPoints[0].point, offset), true) +
+                                    line(add(shadowPoints[2].point, offset), true) +
+                                    "z"
+                    );
+                    path.attr({
+                        stroke: "#000",
+                        strokeWidth: 0,
+                        fill: color,
+                        class: "multiply"
+                    });
+                }
 
                 var svgText = s.outerSVG();
                 document.getElementById("svgSource").value = svgText;
