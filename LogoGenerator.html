@@ -20,10 +20,6 @@
     </head>
 	<body>
 
-    <div style="position: fixed; top: 0px; left: 0px;">
-        <input type="file" id="filePicture" accept="image/*">
-        <canvas id="canvasActiveBitmap" height="16"></canvas>
-    </div>
     <div style="position: fixed; bottom: 0px; left: 0px;">
         <textarea id="svgSource" style="width: 400px; height: 50px;"></textarea>
     </div>
@@ -36,27 +32,30 @@
             var s = Snap(width, height);
 
             var simState = {
-                steps: 50,
-                startStep: 0,
-                ledRadius: 2,
+                scale: 1,
+                lightCount: 4,
+                shadowScale: 1.5,
 
-                axisX: 0.1,
-                axisY: 0.9,
-                axisZ: 0.11,
+                whiteW: 100,
+                whiteH: 20,
 
-                startX: -100,
-                startY: 0,
-                startZ: 200,
+                lightX: -40,
+                lightY: -85,
 
-                shifterDirX: 0,
-                shifterDirY: 10,
-                shifterDirZ: 0,
+                lightStepX: 10,
+                lightStepY: -9,
 
-                transX: 0.01,
-                transY: -4.01,
-                transZ: 0.01,
+                offsetStepX: 0,
+                offsetStepY: 0,
 
-                rotSpeed: 0.035,
+                startX: 300,
+                startY: 200,
+
+                scale: 1,
+
+                debugLines: true,
+
+
 
                 preview: false,
                 save: function () {
@@ -93,32 +92,30 @@
             }
 
 
-            SetupOnChange(gui.add(simState, 'steps', 1, 350));
-            SetupOnChange(gui.add(simState, 'startStep', 0, 249));
+            SetupOnChange(gui.add(simState, 'whiteW', 1, 400));
+            SetupOnChange(gui.add(simState, 'whiteH', 1, 200));
 
-            SetupOnChange(gui.add(simState, 'ledRadius', 1, 10));
+            SetupOnChange(gui.add(simState, 'lightCount', 1, 7));
+            SetupOnChange(gui.add(simState, 'shadowScale', -2, 5));
 
-            SetupOnChange(gui.add(simState, 'rotSpeed', 0, 0.1));
+            SetupOnChange(gui.add(simState, 'lightX', -200, 200));
+            SetupOnChange(gui.add(simState, 'lightY', -200, 200));
 
-            SetupOnChange(gui.add(simState, 'axisX', -1, 1));
-            SetupOnChange(gui.add(simState, 'axisY', -1, 1));
-            SetupOnChange(gui.add(simState, 'axisZ', -1, 1));
+            SetupOnChange(gui.add(simState, 'lightStepX', -100, 100));
+            SetupOnChange(gui.add(simState, 'lightStepY', -100, 100));
+
+            SetupOnChange(gui.add(simState, 'offsetStepX', -100, 100));
+            SetupOnChange(gui.add(simState, 'offsetStepY', -100, 100));
 
             SetupOnChange(gui.add(simState, 'startX', -500, 500));
             SetupOnChange(gui.add(simState, 'startY', -500, 500));
-            SetupOnChange(gui.add(simState, 'startZ', -500, 500));
 
-            SetupOnChange(gui.add(simState, 'shifterDirX', -10, 10));
-            SetupOnChange(gui.add(simState, 'shifterDirY', -10, 10));
-            SetupOnChange(gui.add(simState, 'shifterDirZ', -10, 10));
+            SetupOnChange(gui.add(simState, 'scale', -2, 10));
 
-            SetupOnChange(gui.add(simState, 'transX', -10, 10));
-            SetupOnChange(gui.add(simState, 'transY', -10, 10));
-            SetupOnChange(gui.add(simState, 'transZ', -10, 10));
-
-            SetupOnChange(gui.add(simState, 'preview'));
-
+            SetupOnChange(gui.add(simState, 'debugLines'));
             gui.add(simState, 'save');
+
+            gui.remember(simState);
 
             // initial run
             DoSim();
@@ -126,48 +123,25 @@
             function DoSim() {
                 s.clear();
 
+                var scale = simState.scale;
 
-
-                function add(a, b) {
-                    return [a[0] + b[0], a[1]+b[1]];
-                }
-
-                function sub(a, b) {
-                    return [a[0] - b[0], a[1]-b[1]];
-                }
-
-                function mul(a, s) {
-                    return [a[0]*s, a[1]*s];
-                }
-
-                function len(a) {
-                    return Math.sqrt(a[0]*a[0] * a[1]*a[1]);
-                }
-
-                function point2path(point) {
-                    return point[0] + " " + point[1];
-                }
-
-                function move(point, abs) {
-                    var prefix = abs ? "M" : "m";
-                    return prefix+point2path(point) + " ";
-                }
-
-                function line(point, abs) {
-                    var prefix = abs ? "L" : "l";
-                    return prefix+point2path(point) + " ";
-                }
-
-
-                var whiteSize = [100, 20];
-
-                var repos = [300, 200];
-
-                var whiteW=100, whiteH=20;
+                var repos = [scale*simState.startX, scale*simState.startY];
+                var whiteW=scale*simState.whiteW, whiteH=scale*simState.whiteH;
                 var whiteObj = [[0,0], [whiteW, 0], [whiteW, whiteH], [0, whiteH]];
 
-                var lightPos = [-40, -85];
-                var shadowScale = 1.6;
+                var lightPos = [scale*simState.lightX, scale*simState.lightY];
+
+
+                var shadowScale = simState.shadowScale;
+                var debugLines = simState.debugLines;
+
+                var offset = [0, 0];
+                var offsetDelta = [scale*simState.offsetStepX, scale*simState.offsetStepY];
+                var lightMove = [scale*simState.lightStepX, scale*simState.lightStepY];
+                colors = ["#F70", "#F0F", "#0FF", "#FF0", "#7FF", "#F7F", "#FF7"].slice(0, simState.lightCount);
+
+
+                ////////////////// no state here
 
                 // reposition
                 for (var i in whiteObj) {
@@ -175,15 +149,11 @@
                     whiteObj[i] = add(o, repos);
                 }
                 lightPos = add(lightPos, repos);
-
-                var lightMove = [10,0];
-                colors = ["#F70", "#F0F", "#0FF", "#FF0"];
-                var offset = [0, 0];
-                var offsetDelta = [0, 5];
+               /////////
 
                 for (var i in colors) {
                     var color = colors[i];
-                    drawShadow(whiteObj, lightPos, 2, offset, color, false);
+                    drawShadow(whiteObj, lightPos, shadowScale, offset, color, debugLines);
 
                     lightPos = add(lightPos, lightMove);
                     offset = add(offset, offsetDelta);
@@ -237,6 +207,36 @@
 
                 var svgText = s.outerSVG();
                 document.getElementById("svgSource").value = svgText;
+            }
+
+            function add(a, b) {
+                return [a[0] + b[0], a[1]+b[1]];
+            }
+
+            function sub(a, b) {
+                return [a[0] - b[0], a[1]-b[1]];
+            }
+
+            function mul(a, s) {
+                return [a[0]*s, a[1]*s];
+            }
+
+            function len(a) {
+                return Math.sqrt(a[0]*a[0] * a[1]*a[1]);
+            }
+
+            function point2path(point) {
+                return point[0] + " " + point[1];
+            }
+
+            function move(point, abs) {
+                var prefix = abs ? "M" : "m";
+                return prefix+point2path(point) + " ";
+            }
+
+            function line(point, abs) {
+                var prefix = abs ? "L" : "l";
+                return prefix+point2path(point) + " ";
             }
         });
 		</script>
