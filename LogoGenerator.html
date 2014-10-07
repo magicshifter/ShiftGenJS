@@ -9,12 +9,12 @@
 			}
 		</style>
 		<script type="text/javascript" src="js/libs/snap.svg-min.js"></script>
-        <script type="text/javascript" src="js/libs/dat.gui.min.js"></script>
+        <script type="text/javascript" src="js/libs/dat.gui.js"></script>
         <script type="text/javascript" src="js/libs/three/three.js"></script>
         <script type="text/javascript" src="js/libs/Colour.js"></script>
         <script type="text/javascript" src="js/libs/FileSaver.js"></script>
 
-        <style>
+        <style id="myStyle">
             .multiply { mix-blend-mode: multiply; }
         </style>
     </head>
@@ -64,7 +64,21 @@
                         refreshGui();
                         DoSim();
                     }
+
+                    var styleElement = document.getElementById("myStyle");
+                    styleElement = styleElement.cloneNode(true);
+
                     var svgText = s.outerSVG();
+
+                    var domContainer = document.createElement("div");
+                    domContainer.innerHTML = svgText;
+
+                    var domSvg = domContainer.firstChild;
+                    domSvg.appendChild(styleElement);
+
+                    svgText = outherHTML(domSvg);
+
+
                     var svgBlob = new Blob([svgText], {type: "image/svg+xml"});
                     saveAs(svgBlob, "export.svg");
                     document.getElementById("svgSource").value = svgText;
@@ -72,6 +86,7 @@
             };
 
             var gui = new dat.GUI();
+            gui.remember(simState);
 
             function refreshGui() {
                 for (var i in gui.__controllers) {
@@ -114,8 +129,6 @@
 
             SetupOnChange(gui.add(simState, 'debugLines'));
             gui.add(simState, 'save');
-
-            gui.remember(simState);
 
             // initial run
             DoSim();
@@ -237,6 +250,12 @@
             function line(point, abs) {
                 var prefix = abs ? "L" : "l";
                 return prefix+point2path(point) + " ";
+            }
+
+            function outherHTML(el) {
+                var tmp = document.createElement("div");
+                tmp.appendChild(el);
+                return tmp.innerHTML; // <p>Test</p>
             }
         });
 		</script>
