@@ -27,9 +27,21 @@
     <script>
         window.addEventListener("load", function() {
             var imgData;
+            var s;
+
             var width = window.innerWidth;
             var height = window.innerHeight;
-            var s = Snap(width, height);
+            s = Snap(width, height);
+
+            window.addEventListener('resize', onWindowResize, false);
+            function onWindowResize() {
+                var width = window.innerWidth;
+                var height = window.innerHeight;
+                s.paper.attr({
+                    width: width,
+                    height: height
+                });
+            }
 
             var simState = {
                 scale: 1,
